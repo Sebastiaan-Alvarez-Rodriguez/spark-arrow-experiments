@@ -66,13 +66,17 @@ class ExperimentBase(object):
 
 
     def launch(self, reservation):
-        if len(reservation) > max(x+y for x,y in self.nodes):
-            printw('Reservation size ({} nodes) is more than we will need at most for this experiment ({} Spark-nodes + {} Ceph-nodes).'.format(len(reservation), *max(self.nodes, key=lambda x: x[0]+x[1])))
+        if len(reservation) > max(x+len(conf) for x,conf in self.nodes):
+            printw('Reservation size ({} nodes) is more than we will need at most for this experiment ({} Spark-nodes + {} Ceph-nodes).'.format(len(reservation), *max(self.nodes, key=lambda x: x[0]+len(x[1]))))
 
         if not self.nodes:
             printe('Experiment does not specify any node configurations!')
             return False
 
-        for spark_nodes, ceph_config in self.nodes:
-            ceph_nodes = len(ceph_config)
+        for spark_nodes_amount, ceph_config in self.nodes:
+            ceph_nodes_amount = len(ceph_config)
 
+            nodes_snapshot = list(reservation.nodes)
+            ceph_nodes = nodes_snapshot[:ceph_nodes_amount]
+            spark_nodes = lnodes_snapshot[ceph_nodes_amount:ceph_nodes_amount+spark_nodes_amount]
+            
