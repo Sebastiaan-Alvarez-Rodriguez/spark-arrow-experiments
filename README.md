@@ -20,3 +20,11 @@ Execute it using:
 ```bash
 python3 data-generator/entrypoint.py
 ```
+
+## Requirements
+ - python>=3.2
+ - pandas
+ - pyarrow
+ - metareserve
+ - spark_deploy>=0.1.1
+ - rados_deploy>=0.1.1

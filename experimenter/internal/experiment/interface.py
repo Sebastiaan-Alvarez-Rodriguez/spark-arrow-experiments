@@ -1,27 +1,19 @@
-from internal.experiment.interface import ExperimentInterface
-import utils.location as loc
-from utils.printer import *
+import abc
 
 def get_experiment():
-    '''Pass your defined experiment class in this function so MetaSpark can find it'''
-    return DataScalabilityExperiment
+    '''Implement this function in your experiment, make it return your experiment class'''
+    raise NotImplementedError
 
-
-class DataScalabilityExperiment(ExperimentInterface):
+class ExperimentInterface(metaclass=abc.ABCMeta):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
+
 
     def get_configs(self):
         '''Get experiment configs.
         Returns:
             list(internal.experiment.ExperimentConfiguration), containing all different setups we want to experiment with.'''
-        stripe = 64 # One file should have stripe size of 64MB
-        data_multipliers = [1024, 2*1024, 4*1024, 8*1024, 16*1024] #Total data sizes: 64, 128, 256, 512, 1024 GB
-        for x in data_multipliers:
-            conf = ExperimentConfiguration()
-            conf.stripe = stripe
-            conf.data_multiplier = x
-            yield conf
+        raise NotImplementedError
 
     def on_start(self, config, nodes_spark, nodes_ceph, num_experiment, amount_experiments):
         '''Function hook, called when we start an experiment. This function is called after resources have been allocated.

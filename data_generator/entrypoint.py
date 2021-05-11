@@ -3,9 +3,12 @@ import argparse
 import os
 import sys
 
-import internal.util.fs as fs
-import internal.util.importer as importer
-from internal.util.printer import *
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))) # Appends main project root as importpath.
+
+
+import utils.fs as fs
+import utils.importer as importer
+from utils.printer import *
 
 
 '''Python CLI module to deploy RADOS-Ceph on metareserve-allocated resources.'''
@@ -37,10 +40,9 @@ def generate(gen, dest, stripe):
                 printe('Generated output is too large! Found size: {} ({:.02f}MB) > {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
             else:
                 prints('Generated output ready: Written size: {} ({:.02f}MB) <= {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
-                return True
     else:
         printe('Generator "{}" not found at: {}'.format(gen, fs.join(generators_dir(), gen)))
-    return False
+    return retval, path
 
 
 def add_args(parser):
@@ -60,11 +62,7 @@ def main():
 
     args = parser.parse_args()
 
-    if generate(args.gen, args.dest, args.stripe):
-        retval = True
-    else:
-        mainparser.print_help()
-        retval = False
+    retval = generate(args.gen, args.dest, args.stripe)[0]
 
     if isinstance(retval, bool):
         exit(0 if retval else 1)

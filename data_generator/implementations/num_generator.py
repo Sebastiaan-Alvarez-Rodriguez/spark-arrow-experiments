@@ -2,8 +2,8 @@ import pandas
 import pyarrow
 import pyarrow.parquet as pq
 
-import internal.util.fs as fs
-from internal.util.printer import *
+import utils.fs as fs
+from utils.printer import *
 
 def generate(outputpath, stripe, scheme_amount_bytes=int(1.5*1024*1024), columns=4):
     '''Generates data appearing as:
@@ -14,7 +14,10 @@ def generate(outputpath, stripe, scheme_amount_bytes=int(1.5*1024*1024), columns
     Here, x is the row number (8 bytes int), and y is the maximal column index.
     Args:
         outputpath (str): Path to create files in.
-        stripe (int): Target filesize (in MB)
+        stripe (int): Target filesize (in MB).
+        scheme_amount_bytes (int): Expected parquet scheme size in MB.
+                                   We keep this number of bytes available. If the scheme is larger, the data will not fit, and an error is printed.
+        columns (int): Number of columns to generate. Column names are generated as "col0, col1, col2..."
 
     Returns:
         `(True, generated_filepath)` on success, `(False, None)` otherwise.'''

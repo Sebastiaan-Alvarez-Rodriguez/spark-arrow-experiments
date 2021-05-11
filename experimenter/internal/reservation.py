@@ -1,5 +1,5 @@
 from metareserve import Reservation as _Reservation
-from internal.util.printer import *
+from utils.printer import *
 
 def read_reservation_cli():
     '''Read `MetaReserve.` from user input.'''

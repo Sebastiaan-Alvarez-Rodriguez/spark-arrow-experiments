@@ -3,16 +3,19 @@ import argparse
 import os
 import sys
 
-import internal.util.fs as fs
-import internal.util.importer as importer
-from internal.util.printer import *
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))) # Appends main project root as importpath.
 
-from internal.reservation import read_reservation_cli
+import utils.fs as fs
+import utils.importer as importer
+from utils.printer import *
+
+from experimenter.internal.reservation import read_reservation_cli
+
+import experimenter.internal.experiment.executor as executor
 
 
 '''Python CLI module to deploy RADOS-Ceph on metareserve-allocated resources.'''
 
-sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))) # Appends main project root as importpath.
 
 def experiments_dir():
     return fs.join(fs.abspath(), 'implementations')
@@ -25,22 +28,24 @@ def _default_stripe():
     return 4
 
 
-def _load_experiment():
+def _load_experiment(name):
     module = importer.import_full_path(fs.join(experiments_dir(), name))
     return module.get_experiment()
 
 def experiment(name):
+    if not fs.isfile(experiments_dir(), name) and not name.endswith('.py'):
+        name = name+'.py'
     if not fs.isfile(experiments_dir(), name):
         printe('Experiment "{}" not found at: {}'.format(name, fs.join(experiments_dir(), name)))
         return False
 
-    experiment = _load_experiment()
+    experiment = _load_experiment(name)
 
     reservation = read_reservation_cli()
     if not reservation:
         return False
-    print('Starting experiment using "{}"...'.format(name))
-    return experiment.launch(reservation)
+    print('Starting experiment "{}"...'.format(name))
+    return executor.execute(experiment, reservation)
 
 
 def add_args(parser):
@@ -58,8 +63,9 @@ def main():
 
     args = parser.parse_args()
 
-    retval = experiment(args.experiment, args.do_reserve):
-    if (isinstance(retval, bool) and retval) or (isinstance(retval, int) and retval==0) or retval:
+    retval = experiment(args.experiment)
+
+    if retval:
         prints('Experiment "{}" completed successfully.'.format(args.experiment))
     else:
         printe('Experiment "{}" experienced an error.'.format(args.experiment))
