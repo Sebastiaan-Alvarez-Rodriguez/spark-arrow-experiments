@@ -14,10 +14,10 @@ from utils.printer import *
 '''Python CLI module to deploy RADOS-Ceph on metareserve-allocated resources.'''
 
 def generators_dir():
-    return fs.join(fs.abspath(), 'implementations')
+    return fs.join(fs.abspath(fs.dirname(__file__)), 'implementations')
 
 def output_dir():
-    return fs.join(fs.abspath(), 'generated')
+    return fs.join(fs.abspath(fs.dirname(__file__)), 'generated')
 
 
 def _default_stripe():
@@ -29,19 +29,22 @@ def _default_generator():
 
 
 def generate(gen, dest, stripe):
-    if fs.isfile(generators_dir(), gen):
-        fs.mkdir(dest, exist_ok=True)
-        module = importer.import_full_path(fs.join(generators_dir(), gen))
-        print('Generating using "{}", stripe size {}MB...'.format(gen, stripe))
-        retval, path = module.generate(dest, stripe)
-        if retval:
-            gen_size = os.path.getsize(path)
-            if gen_size > stripe*1024*1024:
-                printe('Generated output is too large! Found size: {} ({:.02f}MB) > {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
-            else:
-                prints('Generated output ready: Written size: {} ({:.02f}MB) <= {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
-    else:
+    if (not fs.isfile(generators_dir(), gen)) and not gen.endswith('.py'):
+        gen = gen+'.py'
+    if not fs.isfile(generators_dir(), gen):
         printe('Generator "{}" not found at: {}'.format(gen, fs.join(generators_dir(), gen)))
+        return False, None
+
+    fs.mkdir(dest, exist_ok=True)
+    module = importer.import_full_path(fs.join(generators_dir(), gen))
+    print('Generating using "{}", stripe size {}MB...'.format(gen, stripe))
+    retval, path = module.generate(dest, stripe)
+    if retval:
+        gen_size = os.path.getsize(path)
+        if gen_size > stripe*1024*1024:
+            printe('Generated output is too large! Found size: {} ({:.02f}MB) > {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
+        else:
+            prints('Generated output ready: Written size: {} ({:.02f}MB) <= {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
     return retval, path
 
 

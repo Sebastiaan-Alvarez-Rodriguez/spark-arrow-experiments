@@ -4,7 +4,7 @@ from rados_deploy import Designation
 '''Configuration classes to define experiment behaviour.'''
 
 def _default_node_configuration():
-    return NodeConfiguration(7, CephConfiguration(
+    return NodeConfiguration(8, CephConfiguration(
         [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD]]))
@@ -27,6 +27,7 @@ class ExperimentConfiguration(object):
         self.key_path = '~/.ssh/geni.rsa'
 
         # Data deployment params
+        self.data_generator_name = 'num_generator'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
 

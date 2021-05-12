@@ -1,5 +1,8 @@
+from rados_deploy import Designation
+
 from internal.experiment.interface import ExperimentInterface
-from experimenter.internal.experiment.config import ExperimentConfiguration
+from experimenter.internal.experiment.config import ExperimentConfiguration, NodeConfiguration, CephConfiguration
+
 import utils.location as loc
 from utils.printer import *
 
@@ -8,6 +11,12 @@ def get_experiment():
     return DataScalabilityExperiment()
 
         
+def get_node_configuration():
+    return NodeConfiguration(5, CephConfiguration(
+        [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
+        [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
+        [Designation.MON, Designation.OSD]]))
+
 
 class DataScalabilityExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
@@ -25,6 +34,7 @@ class DataScalabilityExperiment(ExperimentInterface):
         data_multipliers = [1024, 2*1024, 4*1024, 8*1024, 16*1024] #Total data sizes: 64, 128, 256, 512, 1024 GB
         for x in data_multipliers:
             conf = ExperimentConfiguration()
+            conf.node_config = get_node_configuration()
             conf.stripe = stripe
             conf.data_multiplier = x
             yield conf
