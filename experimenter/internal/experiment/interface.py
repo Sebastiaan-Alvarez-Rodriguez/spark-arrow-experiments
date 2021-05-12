@@ -8,6 +8,7 @@ class ExperimentInterface(metaclass=abc.ABCMeta):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
 
+    class_id = 9606858520421092931
 
     def get_configs(self):
         '''Get experiment configs.
@@ -30,3 +31,10 @@ class ExperimentInterface(metaclass=abc.ABCMeta):
 
     def on_stop(self):
         return False
+
+    @staticmethod
+    def is_experiment(obj):
+        try:
+            return obj.class_id == ExperimentInterface.class_id
+        except AttributeError as e:
+            return False

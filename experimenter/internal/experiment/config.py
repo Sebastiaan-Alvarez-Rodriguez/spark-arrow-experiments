@@ -1,8 +1,13 @@
+import utils.fs as fs
+from rados_deploy import Designation
+
+'''Configuration classes to define experiment behaviour.'''
+
 def _default_node_configuration():
-    return NodeConfiguration(8, CephConfiguration(
+    return NodeConfiguration(7, CephConfiguration(
+        [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD]))
+        [Designation.MON, Designation.OSD]]))
 
 
 class ExperimentConfiguration(object):
@@ -10,7 +15,7 @@ class ExperimentConfiguration(object):
     def __init__(self):
         # Spark cluster options
         self.spark_silent = False
-        self.spark_workdir = ''
+        self.spark_workdir = '~/spark_workdir'
         
         # RADOS-Ceph cluster options
         self.ceph_silent = False
@@ -95,7 +100,7 @@ class CephConfiguration(object):
     def __eq__(self, other):
         if not isinstance(other, CephConfiguration):
             return False
-        return self.designations = other.designations
+        return self.designations == other.designations
 
     def __len__(self):
         return len(self.designations)

@@ -1,15 +1,21 @@
 from internal.experiment.interface import ExperimentInterface
+from experimenter.internal.experiment.config import ExperimentConfiguration
 import utils.location as loc
 from utils.printer import *
 
 def get_experiment():
     '''Pass your defined experiment class in this function so MetaSpark can find it'''
-    return DataScalabilityExperiment
+    return DataScalabilityExperiment()
 
+        
 
 class DataScalabilityExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
+
+    def __init__(self):
+        super(DataScalabilityExperiment, self).__init__()
+
 
     def get_configs(self):
         '''Get experiment configs.

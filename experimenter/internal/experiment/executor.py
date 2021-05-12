@@ -10,29 +10,41 @@ from utils.printer import *
 
 def execute(experiment, reservation):
     '''Execute an experiment.'''
-    if not isinstance(experiment, ExperimentInterface):
-        raise ValueError('Passed value is not a valid experiment!')
+    if not ExperimentInterface.is_experiment(experiment):
+        raise ValueError('Passed value is not a valid experiment: {} (type: {}).'.format(experiment, type(experiment)))
 
-    configs = experiment.get_configs()
+    configs = list(experiment.get_configs())
     reservation_snapshot = list(reservation.nodes)
 
     if len(reservation) > max(len(x.node_config) for x in configs):
         printw('Reservation size ({} nodes) is more than we will need at most for this experiment ({} Spark-nodes + {} Ceph-nodes).'.format(len(reservation), max(configs.node_config, key=lambda x: len(x))))
     for idx, config in enumerate(configs):
-        nodes_config = conf.node_config
+        print('Starting experiment {}/{}'.format(idx+1, len(configs)))
+
+        nodes_config = config.node_config
         num_spark_nodes = nodes_config.num_spark_nodes
         num_ceph_nodes = nodes_config.num_ceph_nodes
 
-        spark_nodes = reservation_snapshot[num_spark_nodes]
-        ceph_nodes = reservation_snapshot[num_spark_nodes:num_spark_nodes+num_ceph_nodes]
-        
+        ceph_nodes = reservation_snapshot[:num_ceph_nodes]
+        spark_nodes = reservation_snapshot[num_ceph_nodes:num_ceph_nodes+num_spark_nodes+1]
+        unused_nodes = reservation_snapshot[num_ceph_nodes+num_spark_nodes+1:] if len(reservation_snapshot) >= num_ceph_nodes+num_spark_nodes else []
+
+        print('Ceph nodes:\n{}'.format(''.join('\t{}\n'.format(x) for x in ceph_nodes)))
+        print('Total: {} nodes.\n'.format(len(ceph_nodes)))
+        print('Spark nodes:\n{}'.format(''.join('\t{}\n'.format(x) for x in spark_nodes)))
+        print('Total: {} nodes.\n'.format(len(spark_nodes)))
+
+        if any(unused_nodes):
+            printw('Currently not using {} nodes:\n{}'.format(len(unused_nodes), ''.join('\t{}\n'.format(x) for x in unused_nodes)))
+
         # Phase 0: Install Spark on nodes.
         # if idx > 0 and sorted_configs[idx-1].num_spark_nodes == num_spark_nodes: #TODO: can skip installation, only have to stop & restart
+        print('Installing Spark on {} nodes...'.format(len(spark_nodes)))
         if not spark_deploy.install(metareserve.Reservation(spark_nodes), key_path=config.key_path, silent=config.spark_silent or config.silent):
             printe('Could not install Spark (iteration {}/{})'.format(idx+1, len(configs)))
             return False
-
-        if not spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=config.key_path, slave_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+        print('Starting Spark on {} nodes...'.format(len(spark_nodes)))
+        if not spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
             printe('Could not start Spark (iteration {}/{})'.format(idx+1, len(configs)))
             return False
 
@@ -70,7 +82,7 @@ def execute(experiment, reservation):
             printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, len(configs)))
             return False
 
-        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, slave_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
             printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, len(configs)))
             return False
 

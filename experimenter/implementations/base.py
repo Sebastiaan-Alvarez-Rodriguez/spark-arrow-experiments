@@ -100,7 +100,7 @@ class ExperimentBase(object):
                 printe('Could not install Spark.') #TODO: Indicate at what point in the iterations the error happened
                 return False
 
-            if not spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=self.key_path, slave_workdir=self.spark_workdir, silent=self.spark_silent or self.silent):
+            if not spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=self.key_path, worker_workdir=self.spark_workdir, silent=self.spark_silent or self.silent):
                 printe('Could not start Spark.') #TODO: Indicate at what point in the iterations the error happened
                 return False
 
@@ -125,7 +125,7 @@ class ExperimentBase(object):
                 printe('Could not stop RADOS-Ceph deployment.')
                 return False
 
-            if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=self.key_path, slave_workdir=self.spark_workdir, silent=self.spark_silent or self.silent):
+            if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=self.key_path, worker_workdir=self.spark_workdir, silent=self.spark_silent or self.silent):
                 printe('Could not stop Spark deployment.')
 
             return True # Test completion. TODO: Remove
