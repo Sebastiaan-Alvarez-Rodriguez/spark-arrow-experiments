@@ -1,4 +1,5 @@
 import utils.fs as fs
+import utils.location as loc
 from rados_deploy import Designation
 
 '''Configuration classes to define experiment behaviour.'''
@@ -87,7 +88,7 @@ class ExperimentConfiguration(object):
 
         # Application deployment params
         self.resultloc = '~/results'
-        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(cons.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'
         self.spark_java_options = lambda conf: ['-Dfile={}'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))]
@@ -97,8 +98,8 @@ class ExperimentConfiguration(object):
         self.spark_extra_jars = []
 
         self.remote_application_dir = '~/application'
-        self.local_application_paths = [] # paths on local machine to files/folders we want to have available when executing spark-submit. Should contain at least the application we want to submit. Data will be placed in `remote_application_dir` on remote.
         self.spark_application_path = 'arrow-spark-benchmark-4.0-light.jar' # path to application on the remote. Executed on remote with CWD=`remote_application_dir`.
+        self.local_application_paths = lambda conf: [fs.join(loc.application_dir(), _to_val(conf.spark_application_path, conf))] # paths on local machine to files/folders we want to have available when executing spark-submit. Should contain at least the application we want to submit. Data will be placed in `remote_application_dir` on remote.
         # TODO: Unused application deployment configuration parameters. Re-implement?
         self.offheap_memory = None #1024*1024*1 # 1 mb of off-heap memory per JVM. Set to None to disable offheap memory
         self.submit_opts = None
