@@ -40,6 +40,8 @@ def execute(experiment, reservation):
         num_spark_nodes = node_config.num_spark_nodes
         num_ceph_nodes = node_config.num_ceph_nodes
 
+        experiment.on_distribute()
+
         ceph_nodes = reservation_snapshot[:num_ceph_nodes]
         spark_nodes = reservation_snapshot[num_ceph_nodes:num_ceph_nodes+num_spark_nodes]
         unused_nodes = reservation_snapshot[num_ceph_nodes+num_spark_nodes:] if len(reservation_snapshot) >= num_ceph_nodes+num_spark_nodes else []
@@ -72,6 +74,8 @@ def execute(experiment, reservation):
             node.extra_info['designations'] = ','.join(x.name.lower() for x in designations)
         # if idx > 0 and sorted_configs[idx-1].ceph_config == node_config.ceph_config: # TODO: Can keep ceph running as-is, and just replace some data.
         # Note: Must make sure to use the previous ceph nodes. Due to changing spark reservation sizes, this is now not the case.
+        
+        experiment.on_install()
         if not rados_deploy.install(metareserve.Reservation(ceph_nodes), key_path=config.key_path, silent=config.ceph_silent or config.silent, cores=config.ceph_compile_cores):
             printe('Could not install RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
             return False
@@ -91,12 +95,11 @@ def execute(experiment, reservation):
             printe('Data deployment on RADOS-Ceph failed (iteration {}/{})'.format(idx+1, num_experiments))
             return False
 
-        if not experiment.on_start(config, spark_nodes, ceph_nodes, idx, num_experiments):
+        if experiment.on_start(config, spark_nodes, ceph_nodes, idx, num_experiments):
             # TODO: Some computation should happen here.
             prints('Super hardcore computation completed! (iteration {}/{})'.format(idx+1, num_experiments))
         else:
             printw('Cancelled experiment {}/{}...'.format(idx+1, num_experiments))
-
 
         experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
 
@@ -109,4 +112,6 @@ def execute(experiment, reservation):
             return False
 
         break # Test completion. TODO: Remove
+
+    experiment.on_end()
     return True
