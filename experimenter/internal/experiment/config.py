@@ -10,9 +10,58 @@ def _default_node_configuration():
         [Designation.MON, Designation.OSD]]))
 
 
+def _to_val(val_or_callable, *args, **kwargs):
+    if callable(val_or_callable):
+        return val_or_callable(*args, **kwargs)
+    return val_or_callable
+
+
+class ExperimentConfigurationBuilder(object):
+    def __init__(self):
+        self.instance = ExperimentConfiguration()
+
+    def set(self, name, value):
+        '''Set any attribute of an `ExperimentConfiguration` instance. 
+        Note: You can assign lambdas/callable function as values.
+        These callables must take 1 argument, to which the `ExperimentConfiguration` will be passed.
+        Args:
+            name (str): Name of the attribute to set.
+            value (any type, callable): Value for the attribute to set. Can be callable with 1 argument.'''
+        if name.startswith('_'):
+            raise ValueError('Illegal set-call. Cannot set config attributes starting with underscores ("_"). Found name: {}'.format(name))
+        setattr(self.instance, name, value)
+
+    def build(self):
+        '''Build `ExperimentConfiguration`.'''
+        config_attr_names = [x for x in dir(self.instance) if not x.startswith('_')]
+        for x in config_attr_names:
+            attr = getattr(self.instance, x)
+            if callable(attr):
+                setattr(self.instance, x, attr(self.instance))
+        return self.instance
+
+
 class ExperimentConfiguration(object):
     '''Data class containing all kinds of configurable parameters for experiments.'''
     def __init__(self):
+        # Argument params
+        self.runs = 31
+        self.kind = 'df'
+        self.mode = '--arrow-only' # Pick from '--arrow-only, --spark-only'
+        # Unused params
+        self.rbs = 8192
+
+        # Experiment params
+        self.node_config = _default_node_configuration() # Must be a `NodeConfiguration`. Note: Number of Ceph-nodes must be at least 3.        
+        # Unused experiment params
+        self.retries = 2 # If our application dies X times, we stop trying and move on
+        self.appl_sleeptime = 30 # Sleep X seconds between checks
+        self.appl_dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died
+        self.eventlog_path = None  # Set this to an existing directory to make Spark history server logs
+        self.flamegraph_time = None
+        self.flamegraph_only_master = False
+        self.flamegraph_only_worker = False
+
         # Spark cluster options
         self.spark_silent = False
         self.spark_workdir = '~/spark_workdir'
@@ -30,37 +79,30 @@ class ExperimentConfiguration(object):
         self.data_generator_name = 'num_generator'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
+        # Unused data deployment params
+        self.compressions = 'uncompressed'
+        self.num_columns = 4
+        self.compute_columns = 4
+        self.data_format = 'pq' # used in command, unused by generator.
 
         # Application deployment params
-        self.jar = 'arrow-spark-benchmark-1.0-light.jar'
-        self.mainclass = 'org.arrowspark.benchmark.Benchmark'
-        self.args = '{} -np {} -r {} -p {}/ --format {} -nr {} -dm {} -cl {} -nc {} -cc {}'
-        self.extra_jars = None
+        self.resultloc = '~/results'
+        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(cons.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+        self.spark_application_type = 'java'
+        self.spark_deploymode = 'cluster'
+        self.spark_java_options = lambda conf: ['-Dfile={}'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))]
+        self.spark_conf_options = []
+        self.spark_application_args = lambda conf: '{} --path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
+        self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
+        self.spark_extra_jars = []
+
+        self.remote_application_dir = '~/application'
+        self.local_application_paths = [] # paths on local machine to files/folders we want to have available when executing spark-submit. Should contain at least the application we want to submit. Data will be placed in `remote_application_dir` on remote.
+        self.spark_application_path = 'arrow-spark-benchmark-4.0-light.jar' # path to application on the remote. Executed on remote with CWD=`remote_application_dir`.
+        # TODO: Unused application deployment configuration parameters. Re-implement?
         self.offheap_memory = None #1024*1024*1 # 1 mb of off-heap memory per JVM. Set to None to disable offheap memory
         self.submit_opts = None
         self.shared_submit_opts = None
-
-        self.no_results_dir = True
-        self.eventlog_path = None  # Set this to an existing directory to make Spark history server logs
-        self.flamegraph_time = None
-        self.flamegraph_only_master = False
-        self.flamegraph_only_worker = False
-        self.resultloc = fs.join(fs.abspath(), '..', 'base_res')
-
-        # Experiment params
-        self.node_config = _default_node_configuration() # Must be a `NodeConfiguration`. Note: Number of Ceph-nodes must be at least 3.
-        self.extensions = 'pq'
-        self.compressions = 'uncompressed'
-        self.compute_columns = 4
-        self.kinds = 'df'
-        self.rbs = 8192
-        self.test_modes = '--arrow-only', '--spark-only'
-        self.custom_rb_func = None #Function to override rbs for experiments with variable amounts of input data
-
-        self.runs = 31 # We run our implementation and the Spark baseline implementation X times
-        self.retries = 2 # If our application dies X times, we stop trying and move on
-        self.appl_sleeptime = 30 # Sleep X seconds between checks
-        self.appl_dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died
 
 
 class NodeConfiguration(object):

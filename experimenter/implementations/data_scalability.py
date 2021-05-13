@@ -1,7 +1,7 @@
 from rados_deploy import Designation
 
 from internal.experiment.interface import ExperimentInterface
-from experimenter.internal.experiment.config import ExperimentConfiguration, NodeConfiguration, CephConfiguration
+from experimenter.internal.experiment.config import ExperimentConfigurationBuilder, ExperimentConfiguration, NodeConfiguration, CephConfiguration
 
 import utils.location as loc
 from utils.printer import *
@@ -33,11 +33,11 @@ class DataScalabilityExperiment(ExperimentInterface):
         stripe = 64 # One file should have stripe size of 64MB
         data_multipliers = [1024, 2*1024, 4*1024, 8*1024, 16*1024] #Total data sizes: 64, 128, 256, 512, 1024 GB
         for x in data_multipliers:
-            conf = ExperimentConfiguration()
-            conf.node_config = get_node_configuration()
-            conf.stripe = stripe
-            conf.data_multiplier = x
-            yield conf
+            confbuilder = ExperimentConfigurationBuilder()
+            confbuilder.set('node_config', get_node_configuration())
+            confbuilder.set('stripe', stripe)
+            confbuilder.set('data_multiplier', x)
+            yield confbuilder.build()
 
 
     def on_distribute(self):
