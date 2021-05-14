@@ -56,10 +56,10 @@ class ExperimentConfiguration(object):
 
         # Experiment params
         self.node_config = _default_node_configuration() # Must be a `NodeConfiguration`. Note: Number of Ceph-nodes must be at least 3.        
+        self.tries = 2 # If our application dies X times, we stop trying and move on
+        self.sleeptime = 30 # Sleep X seconds between checks
+        self.dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died
         # Unused experiment params
-        self.retries = 2 # If our application dies X times, we stop trying and move on
-        self.appl_sleeptime = 30 # Sleep X seconds between checks
-        self.appl_dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died
         self.eventlog_path = None  # Set this to an existing directory to make Spark history server logs
         self.flamegraph_time = None
         self.flamegraph_only_master = False

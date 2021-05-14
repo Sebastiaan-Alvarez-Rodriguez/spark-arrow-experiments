@@ -1,3 +1,5 @@
+import time
+
 import metareserve
 import spark_deploy
 import rados_deploy
@@ -6,6 +8,9 @@ import experimenter.internal.data as data
 from experimenter.internal.experiment.interface import ExperimentInterface
 import utils.location as loc
 from utils.printer import *
+
+from experimenter.internal.experiment.blocker import block, BlockState
+
 
 def _check_reservation_size(configs, reservation):
     max_node_conf = max((x.node_config for x in configs), key=lambda x: len(x))
@@ -21,12 +26,16 @@ def _check_reservation_size(configs, reservation):
     
 
 def _submit_blocking(config, command, spark_nodes):
-    for retry in range(config.retries):
-        if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
-            printe('Could not submit application on remote. Used command: {}'.format(command))
-            continue
+    if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
+        printw('Could not submit application on remote. Used command: {}'.format(command))
+        time.sleep(10)
+        continue
 
-
+    for _try in range(config.tries):
+        state = block(command, args=None, sleeptime=conf.sleeptime, dead_after_retries=conf.dead_after_tries)
+        if state == BlockState.TIMEOUT:
+            pass # TODO: recover
+    return state == BlockState.COMPLETED
 
 
 def execute(experiment, reservation):
