@@ -20,6 +20,15 @@ def _check_reservation_size(configs, reservation):
     return True
     
 
+def _submit_blocking(config, command, spark_nodes):
+    for retry in range(config.retries):
+        if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
+            printe('Could not submit application on remote. Used command: {}'.format(command))
+            continue
+
+
+
+
 def execute(experiment, reservation):
     '''Execute an experiment.'''
     if not ExperimentInterface.is_experiment(experiment):
@@ -94,12 +103,12 @@ def execute(experiment, reservation):
 
 
         # Phase 3: Generate and deploy data on RADOS-Ceph cluster.
-        retval, data_path = data.generate(config.data_generator_name, dest=loc.data_generation_dir(), stripe=config.stripe)
+        retval, num_rows = data.generate(config.data_generator_name, config.data_path, config.stripe, config.num_columns, config.data_format, extra_args=config.data_gen_extra_args, extra_kwargs=config.data_gen_extra_kwargs)
         if not retval:
             printe('Could not generate data using generator named "{}", destination: {} (iteration {}/{})'.format(config.data_generator_name, loc.data_generation_dir(), idx+1, num_experiments))
             return False 
 
-        if not rados_deploy.deploy(metareserve.Reservation(ceph_nodes+spark_nodes), paths=[data_path], key_path=config.key_path, admin_id=ceph_admin_id, stripe=config.stripe, multiplier=config.data_multiplier, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
+        if not rados_deploy.deploy(metareserve.Reservation(ceph_nodes+spark_nodes), paths=[config.data_path], key_path=config.key_path, admin_id=ceph_admin_id, stripe=config.stripe, multiplier=config.data_multiplier, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
             printe('Data deployment on RADOS-Ceph failed (iteration {}/{})'.format(idx+1, num_experiments))
             return False
 
@@ -116,24 +125,25 @@ def execute(experiment, reservation):
                 cmd_builder.set_class(config.spark_application_mainclass)
                 cmd_builder.add_jars(*config.spark_extra_jars)
             command = cmd_builder.build()
-            if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
-                printe('Could not submit application on remote. Used command: {}'.format(command))
-                return False
-            prints('Super hardcore computation completed! (iteration {}/{})'.format(idx+1, num_experiments))
+            if _submit_blocking(config, command, spark_nodes):
+                prints('Super hardcore computation completed! (iteration {}/{})'.format(idx+1, num_experiments))
+            else:
+                printe('Fatal error for experiment iteration {}/{}'.format(idx+1, num_experiments))
+
         else:
             printw('Cancelled experiment {}/{}...'.format(idx+1, num_experiments))
 
 
         # Phase 5: Stop instances.
-        experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
+        # experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
 
-        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
-            printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
-            return False
+        # if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+        #     printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
+        #     return False
 
-        if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
-            printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
-            return False
+        # if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
+        #     printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
+        #     return False
 
         break # Test completion. TODO: Remove
 

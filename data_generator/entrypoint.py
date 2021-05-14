@@ -7,52 +7,30 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__)))) 
 
 
 import utils.fs as fs
+import utils.location as loc
 import utils.importer as importer
 from utils.printer import *
 
+from data_generator.internal.data_format import DataFormat
 
-'''Python CLI module to deploy RADOS-Ceph on metareserve-allocated resources.'''
-
-def generators_dir():
-    return fs.join(fs.abspath(fs.dirname(__file__)), 'implementations')
-
-def output_dir():
-    return fs.join(fs.abspath(fs.dirname(__file__)), 'generated')
+'''Python CLI module to generate data.'''
 
 
 def _default_stripe():
     return 4
 
 def _default_generator():
-    return sorted(fs.ls(generators_dir(), only_files=True))[0]
-
-
-
-def generate(gen, dest, stripe):
-    if (not fs.isfile(generators_dir(), gen)) and not gen.endswith('.py'):
-        gen = gen+'.py'
-    if not fs.isfile(generators_dir(), gen):
-        printe('Generator "{}" not found at: {}'.format(gen, fs.join(generators_dir(), gen)))
-        return False, None
-
-    fs.mkdir(dest, exist_ok=True)
-    module = importer.import_full_path(fs.join(generators_dir(), gen))
-    print('Generating using "{}", stripe size {}MB...'.format(gen, stripe))
-    retval, path = module.generate(dest, stripe)
-    if retval:
-        gen_size = os.path.getsize(path)
-        if gen_size > stripe*1024*1024:
-            printe('Generated output is too large! Found size: {} ({:.02f}MB) > {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
-        else:
-            prints('Generated output ready: Written size: {} ({:.02f}MB) <= {} ({}MB)'.format(gen_size, round(gen_size/1024/1024, 2), stripe*1024*1024, stripe))
-    return retval, path
+    return sorted(fs.ls(loc.data_generator_dir(), only_files=True))[0]
 
 
 def add_args(parser):
-    parser.add_argument('--gen', type=str, default=_default_generator(), help='Data generator to execute (default={})'.format(_default_generator()))
-    parser.add_argument('--dest', type=str, default=output_dir(), help='Generator output dir (default={})'.format(output_dir()))
+    parser.add_argument('dest', type=str, help='Generator output path'.)
+    parser.add_argument('format', type=str, default='parquet', help='Data format to generate. One of: {}'.format(', '.join(x for x in DataFormat)))
+    parser.add_argument('--generator', type=str, default=_default_generator(), help='Data generator to execute (default={})'.format(_default_generator()))
     parser.add_argument('--stripe', metavar='amount', type=int, default=_default_stripe(), help='Striping, in megabytes (default={}MB). Must be a multiple of 4. Every file has to be smaller than set stripe size.'.format(_default_stripe()))
-
+    parser.add_argument('--num-columns', dest='num_columns', type=int, default=4, help='Number of columns to generate (default=4).')
+    parser.add_argument('--extra-args'. dest='extra_args', type=str, nargs='+', default='', help='Extra args to pass to generator.')
+    parser.add_argument('--extra-kwargs'. dest='extra_kwargs', type=str, nargs='+', default='', help='Extra kwargs to pass to generator.')
 
 def main():
     parser = argparse.ArgumentParser(
@@ -65,7 +43,9 @@ def main():
 
     args = parser.parse_args()
 
-    retval = generate(args.gen, args.dest, args.stripe)[0]
+    extra_args = list(args.extra_args.split())
+    extra_kwargs = {x.split('=') for x in args.extra_kwargs.split()}
+    retval = generator.generate(args.generator, args.dest, args.stripe, args.num_columns, args.format, extra_args, extra_kwargs)[0]
 
     if isinstance(retval, bool):
         exit(0 if retval else 1)

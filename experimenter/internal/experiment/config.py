@@ -18,13 +18,17 @@ def _to_val(val_or_callable, *args, **kwargs):
 
 
 class ExperimentConfigurationBuilder(object):
-    def __init__(self):
-        self.instance = ExperimentConfiguration()
+    '''Simple builder object. Allows you to instantiate a class, change attributes, and finalize them using the `build` method.
+    This builder allows users to set lambdas/callable functions as values.
+    These get executed on configuration finalization, with the to-be-finalized class instance.'''
+    def __init__(self, clazz=ExperimentConfiguration):
+        self.instance = clazz()
 
     def set(self, name, value):
-        '''Set any attribute of an `ExperimentConfiguration` instance. 
+        '''Set any attribute of a `clazz` instance. 
         Note: You can assign lambdas/callable function as values.
-        These callables must take 1 argument, to which the `ExperimentConfiguration` will be passed.
+        These callables must take 1 argument, to which the `clazz` instance will be passed.
+        Warning: If your callables require other instance variables, you must explicitly check if they are callable (then you must call them to get value) or just values.
         Args:
             name (str): Name of the attribute to set.
             value (any type, callable): Value for the attribute to set. Can be callable with 1 argument.'''
@@ -33,7 +37,7 @@ class ExperimentConfigurationBuilder(object):
         setattr(self.instance, name, value)
 
     def build(self):
-        '''Build `ExperimentConfiguration`.'''
+        '''Build an instance of `class`.'''
         config_attr_names = [x for x in dir(self.instance) if not x.startswith('_')]
         for x in config_attr_names:
             attr = getattr(self.instance, x)
@@ -49,8 +53,6 @@ class ExperimentConfiguration(object):
         self.runs = 31
         self.kind = 'df'
         self.mode = '--arrow-only' # Pick from '--arrow-only, --spark-only'
-        # Unused params
-        self.rbs = 8192
 
         # Experiment params
         self.node_config = _default_node_configuration() # Must be a `NodeConfiguration`. Note: Number of Ceph-nodes must be at least 3.        
@@ -73,26 +75,34 @@ class ExperimentConfiguration(object):
         self.ceph_mountpoint_path = '/mnt/cephfs'
 
         #Shared cluster options
-        self.silent = False # Overrides both spark_silent and ceph_silent if set to `True`.
-        self.key_path = '~/.ssh/geni.rsa'
+        self.silent = False # Overrides both `spark_silent` and `ceph_silent` if set to `True`.
+        self.key_path = '~/.ssh/geni.rsa' # Key to use when connecting from our machine to them, remotely.
 
-        # Data deployment params
+        # Data deployment params - Check all the possible parameters
         self.data_generator_name = 'num_generator'
+        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf)))
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
-        # Unused data deployment params
-        self.compressions = 'uncompressed'
+        self.data_format = 'parquet'
         self.num_columns = 4
+        self.data_gen_extra_args = None
+        self.data_gen_extra_kwargs = None
+
+        # Unused data deployment params
         self.compute_columns = 4
-        self.data_format = 'pq' # used in command, unused by generator.
 
         # Application deployment params
         self.resultloc = '~/results'
         self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+        self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'
-        self.spark_java_options = lambda conf: ['-Dfile={}'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))]
-        self.spark_conf_options = []
+        self.spark_java_options = '-Dlog4j.configuration=file:{}'.format(fs.join(loc.get_metaspark_log4j_conf_dir(),'driver_log4j.properties'))
+        self.spark_conf_options = lambda conf: [
+            "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.sql.parquet.columnarReaderBatchSize={}'".format(to_val(conf.batchsize, conf)),
+        ]
         self.spark_application_args = lambda conf: '{} --path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
         self.spark_extra_jars = []
