@@ -1,4 +1,5 @@
 import time
+import concurrent.futures
 
 import metareserve
 import spark_deploy
@@ -6,10 +7,16 @@ import rados_deploy
 
 import experimenter.internal.data as data
 from experimenter.internal.experiment.interface import ExperimentInterface
+from experimenter.internal.remoto.util import get_ssh_connection as _get_ssh_connection
 import utils.location as loc
 from utils.printer import *
+import experimenter.internal.experiment.blocker as blocker
+import experimenter.internal.result.util as func_util
 
-from experimenter.internal.experiment.blocker import block, BlockState
+def _merge_kwargs(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
 
 
 def _check_reservation_size(configs, reservation):
@@ -25,17 +32,42 @@ def _check_reservation_size(configs, reservation):
     return True
     
 
-def _submit_blocking(config, command, spark_nodes):
-    if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
-        printw('Could not submit application on remote. Used command: {}'.format(command))
-        time.sleep(10)
-        continue
+def _submit_blocking(config, command, spark_connectionwrappers, spark_master_id):
+    '''Submits Spark command. Waits on completion by checking the amount of results gathered to this point.
+    If the system appears to have crashed, we reboot it and make it continue.
+    Args:
+        config (ExperimentConfiguration): Configuration to read control parameters from.
+        command (str): Command to provide to spark-submit.
+        spark_connectionwrappers (dict(metareserve.Node, RemotoSSHWrapper): Dict mapping all Spark nodes to connections.
+        spark_master_id (int): Node id of the Spark master node.
+
+    Returns:
+        `True` if the run is completed and we collected enough data. `False` if the run crashed too many times.'''
+    results_file = fs.join(config.resultloc, config.resultfile)
+    lines_needed = config.runs
 
     for _try in range(config.tries):
-        state = block(command, args=None, sleeptime=conf.sleeptime, dead_after_retries=conf.dead_after_tries)
-        if state == BlockState.TIMEOUT:
-            pass # TODO: recover
-    return state == BlockState.COMPLETED
+        if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
+            printw('Could not submit application on remote. Used command: {}'.format(command))
+            return False
+
+        if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
+            driver_node_id = spark_master_id
+        else: # We have to find the node that executes the driver in cluster mode.
+            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, results_file), sleeptime=10, dead_after_tries=3) 
+            if state == blocker.BlockState.COMPLETED:
+                driver_node_id = val
+            else:
+                raise RuntimeError('Could not find results file on any node: {}'.format(results_file))
+
+        driver_node = next(node for node, wrapper in spark_connectionwrappers.items() if node.node_id == driver_node_id)
+        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_file, lines_needed), sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
+        if state == blocker.BlockState.COMPLETED:
+            return True
+        if state == blocker.BlockState.TIMEOUT:
+            printw('System timeout detected. Current status: {}/{}'.format(val, config.runs))
+            lines_needed += 1 # +1 because we need a new line for warming caches.
+    return False
 
 
 def execute(experiment, reservation):
@@ -121,7 +153,18 @@ def execute(experiment, reservation):
             printe('Data deployment on RADOS-Ceph failed (iteration {}/{})'.format(idx+1, num_experiments))
             return False
 
-        # Phase 4: Start experiment.
+
+        # Phase 4: Connect to Spark nodes for collecting and reviewing results.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(spark_nodes)) as executor:
+            ssh_kwargs = {'IdentitiesOnly': 'yes', 'StrictHostKeyChecking': 'no'}
+            if key_path:
+                ssh_kwargs['IdentityFile'] = config.key_path
+
+            futures_spark_connection = {x: executor.submit(_get_ssh_connection, x.ip_public, silent=silent, ssh_params=_merge_kwargs(ssh_kwargs, {'User': x.extra_info['user']})) for x in spark_nodes}
+            spark_connectionwrappers = {node: future.result() for node, future in futures_spark_connection.items()}
+
+
+        # Phase 5: Start experiment.
         if experiment.on_start(config, spark_nodes, ceph_nodes, idx, num_experiments):
             cmd_builder = spark_deploy.SubmitCommandBuilder(cmd_type=config.spark_application_type)
             cmd_builder.set_master(spark_master_url)
@@ -134,7 +177,7 @@ def execute(experiment, reservation):
                 cmd_builder.set_class(config.spark_application_mainclass)
                 cmd_builder.add_jars(*config.spark_extra_jars)
             command = cmd_builder.build()
-            if _submit_blocking(config, command, spark_nodes):
+            if _submit_blocking(config, command, spark_connectionwrappers, spark_master_id):
                 prints('Super hardcore computation completed! (iteration {}/{})'.format(idx+1, num_experiments))
             else:
                 printe('Fatal error for experiment iteration {}/{}'.format(idx+1, num_experiments))
@@ -144,15 +187,15 @@ def execute(experiment, reservation):
 
 
         # Phase 5: Stop instances.
-        # experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
+        experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
 
-        # if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
-        #     printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
-        #     return False
+        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+            printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
+            return False
 
-        # if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
-        #     printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
-        #     return False
+        if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
+            printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
+            return False
 
         break # Test completion. TODO: Remove
 

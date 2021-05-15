@@ -16,4 +16,4 @@ class Compression(Enum):
         return Compression[string.strip().upper()]
 
     def to_string(self):
-        return self.name().lower()
+        return self.name.lower()

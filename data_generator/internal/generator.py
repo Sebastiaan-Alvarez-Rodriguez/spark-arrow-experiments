@@ -31,6 +31,10 @@ def generate(generator_name, dest, stripe, num_columns, data_format, extra_args=
         data_format (str): DataFormat to use. See `data_generator.internal.data_format.DataFormat` for options.
         extra_args (optional list(str)): Extra arguments to pass to generator function.
         extra_kwargs (optional dict(str, str): Extra keyword arguments to pass to generator function.'''
+    dest = fs.abspath(dest)
+    if fs.isdir(dest):
+        printe('Given generation location is a directory (need path to (potentially non-existing) file): {}'.format(dest))
+        return False, None
     data_format = DataFormat.from_string(data_format)
 
     module = _import_module(generator_name)
@@ -38,7 +42,7 @@ def generate(generator_name, dest, stripe, num_columns, data_format, extra_args=
         printe('Generator "{}" not found at: {}'.format(generator_name, fs.join(loc.data_generator_dir(), generator_name)))
         return False, None
 
-    fs.mkdir(dest, exist_ok=True)
+    fs.mkdir(fs.dirname(dest), exist_ok=True)
 
     registry = module.register()
     if not data_format in registry:

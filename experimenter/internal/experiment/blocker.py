@@ -1,3 +1,4 @@
+import concurrent.futures
 from enum import Enum
 import time
 
@@ -9,60 +10,70 @@ class BlockState(Enum):
     FAILED = 3   # Finished, with failure - internal failure.
     TIMEOUT = 4  # Finished, with failure - timeout.
 
-class Blocker(object):
-    '''Simple object to block control until Spark has finished executing.'''
-    def __init__(self):
-        pass
-
-    def block(self, command, args=None, sleeptime=60, dead_after_retries=3):
-        '''Blocks for given command. Command must return a `BlockState`, optionally with an additional value.
-        If the 'COMPLETE' state is returned, blocking stops and we return True.
-        If the 'FAILED' state is returned, blocking stops and we return False.
-        If the 'BUSY' state is returned, we sleep for sleeptime seconds.
-        Note: If the command returns both a BlockState and an additional value, we check the difference with the previous value.
-        If the value remains unchanged after dead_after_retries retries, we assume that the application has died, and we return `False`.
-
-        Args:
-            command (function): Function to periodically call.
-            args (optional tuple): Container with args to use for calling.
-            sleeptime (optional int): Number of seconds to sleep between calls.
-            dead_after_retries (optional int): Number of times to call the command at most before giving up.
-
-        Returns:
-            `BlockState`, which callers can use to see what return condition was met.'''
-        val = None
-        state = BlockState.INIT
-        unchanged = 0
-
-        while True:
-            if args == None or len(args) == 0:
-                tmp = command()
-            else:
-                tmp = command(*args)
-            if len(tmp) == 2:
-                state, val_cur = tmp
-                if val_cur == val:
-                    unchanged += 1
-                else:
-                    unchanged = 0
-                val = val_cur
-            else:
-                state = tmp
-
-            if state == BlockState.COMPLETE:
-                return BlockState.COMPLETE # Completed!
-            elif state == BlockState.FAILED:
-                return BlockState.FAILED # User function tells we failed
-
-            if unchanged == dead_after_retries:
-                return BlockState.TIMEOUT
-            time.sleep(sleeptime)
 
 
-    @staticmethod
-    def simple_spark_blocker(config):
-        '''Steps:
-         1. find the Spark node that has the log.
-         2. read log, report length.
-         '''
-        pass
+def block(command, args=None, sleeptime=60, dead_after_tries=3):
+    '''Blocks for given command. Command must return a `BlockState`.
+    If the 'BUSY' state is returned, we sleep for sleeptime seconds. Any other state is seen as a final state, and makes the function return.
+    Args:
+        command (function): Function to periodically call.
+        args (optional tuple): Container with args to use for calling.
+        sleeptime (optional int): Number of seconds to sleep between calls.
+        dead_after_tries (optional int): Number of times we call the command at most before giving up.
+
+    Returns:
+        `BlockState`, which callers can use to see what return condition was met.'''
+    val = None
+    state = BlockState.INIT
+
+    for x in range(dead_after_tries):
+        tmp = command(*args) if args else command()
+        state = tmp
+
+        if state == BlockState.COMPLETE:
+            return BlockState.COMPLETE
+        elif state == BlockState.FAILED:
+            return BlockState.FAILED
+        time.sleep(sleeptime)
+
+    return BlockState.TIMEOUT
+
+
+def block_with_value(command, args=None, sleeptime=60, dead_after_tries=3, return_val=False):
+    '''Blocks for given command. Command must return a `BlockState`, and another series of values.
+    If the 'BUSY' state is returned, we sleep for sleeptime seconds. Any other state is seen as a final state, and makes the function return.
+    Note: If the command returns both a BlockState and an additional value, we check the difference with the previous value.
+    We return when the value remains unchanged after `dead_after_tries` retries.
+
+    Args:
+        command (function): Function to periodically call.
+        args (optional tuple): Container with args to use for calling.
+        sleeptime (optional int): Number of seconds to sleep between calls.
+        dead_after_tries (optional int): Number of times we call the command + getting the same returnvalue before giving up. Note: If the returnvalue changes once, the counter is reset.
+        return_val (optional bool): If set, returns last encountered value along with final state. Otherwise, only returns final state.
+
+    Returns:
+        `(BlockState, command returnvalue)` if `return_val` is set, `BlockState` otherwise. Callers can use the BlockState to see what return condition was met.'''
+    val_stored = None
+    state = BlockState.INIT
+    unchanged = 0
+
+    while unchanged < dead_after_tries:
+        tmp = command(*args) if args else command()
+        
+        state, *val = tmp
+        if val == val_stored:
+            unchanged += 1
+        else:
+            unchanged = 0
+        val_stored = val
+
+        if state != BlockState.BUSY:
+            return state, return_val
+        if state == BlockState.COMPLETE:
+            return BlockState.COMPLETE, val if return_val else BlockState.COMPLETE
+        elif state == BlockState.FAILED:
+            return BlockState.FAILED, val if return_val else BlockState.FAILED
+        time.sleep(sleeptime)
+
+    return BlockState.TIMEOUT, val if return_val else BlockState.TIMEOUT

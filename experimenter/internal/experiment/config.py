@@ -17,37 +17,8 @@ def _to_val(val_or_callable, *args, **kwargs):
     return val_or_callable
 
 
-class ExperimentConfigurationBuilder(object):
-    '''Simple builder object. Allows you to instantiate a class, change attributes, and finalize them using the `build` method.
-    This builder allows users to set lambdas/callable functions as values.
-    These get executed on configuration finalization, with the to-be-finalized class instance.'''
-    def __init__(self, clazz=ExperimentConfiguration):
-        self.instance = clazz()
-
-    def set(self, name, value):
-        '''Set any attribute of a `clazz` instance. 
-        Note: You can assign lambdas/callable function as values.
-        These callables must take 1 argument, to which the `clazz` instance will be passed.
-        Warning: If your callables require other instance variables, you must explicitly check if they are callable (then you must call them to get value) or just values.
-        Args:
-            name (str): Name of the attribute to set.
-            value (any type, callable): Value for the attribute to set. Can be callable with 1 argument.'''
-        if name.startswith('_'):
-            raise ValueError('Illegal set-call. Cannot set config attributes starting with underscores ("_"). Found name: {}'.format(name))
-        setattr(self.instance, name, value)
-
-    def build(self):
-        '''Build an instance of `class`.'''
-        config_attr_names = [x for x in dir(self.instance) if not x.startswith('_')]
-        for x in config_attr_names:
-            attr = getattr(self.instance, x)
-            if callable(attr):
-                setattr(self.instance, x, attr(self.instance))
-        return self.instance
-
-
 class ExperimentConfiguration(object):
-    '''Data class containing all kinds of configurable parameters for experiments.'''
+    '''Data class containing all kinds of configurable parameters for experiments. Create an instance of this class using `ExperimentConfigurationBuilder`.'''
     def __init__(self):
         # Argument params
         self.runs = 31
@@ -68,7 +39,7 @@ class ExperimentConfiguration(object):
         # Spark cluster options
         self.spark_silent = False
         self.spark_workdir = '~/spark_workdir'
-        
+
         # RADOS-Ceph cluster options
         self.ceph_silent = False
         self.ceph_compile_cores = 16
@@ -97,11 +68,12 @@ class ExperimentConfiguration(object):
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'
-        self.spark_java_options = '-Dlog4j.configuration=file:{}'.format(fs.join(loc.get_metaspark_log4j_conf_dir(),'driver_log4j.properties'))
+        self.spark_java_options = []
+        # self.spark_java_options = ['-Dlog4j.configuration=file:{}'.format(fs.join(loc.get_metaspark_log4j_conf_dir(), 'driver_log4j.properties'))]
         self.spark_conf_options = lambda conf: [
             "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
             "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
-            "'spark.sql.parquet.columnarReaderBatchSize={}'".format(to_val(conf.batchsize, conf)),
+            "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
         self.spark_application_args = lambda conf: '{} --path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
@@ -114,6 +86,35 @@ class ExperimentConfiguration(object):
         self.offheap_memory = None #1024*1024*1 # 1 mb of off-heap memory per JVM. Set to None to disable offheap memory
         self.submit_opts = None
         self.shared_submit_opts = None
+
+
+class ExperimentConfigurationBuilder(object):
+    '''Simple builder object. Allows you to instantiate a class, change attributes, and finalize them using the `build` method.
+    This builder allows users to set lambdas/callable functions as values.
+    These get executed on configuration finalization, with the to-be-finalized class instance.'''
+    def __init__(self, clazz=ExperimentConfiguration):
+        self.instance = clazz()
+
+    def set(self, name, value):
+        '''Set any attribute of a `clazz` instance. 
+        Note: You can assign lambdas/callable function as values.
+        These callables must take 1 argument, to which the `clazz` instance will be passed.
+        Warning: If your callables require other instance variables, you must explicitly check if they are callable (then you must call them to get value) or just values.
+        Args:
+            name (str): Name of the attribute to set.
+            value (any type, callable): Value for the attribute to set. Can be callable with 1 argument.'''
+        if name.startswith('_'):
+            raise ValueError('Illegal set-call. Cannot set config attributes starting with underscores ("_"). Found name: {}'.format(name))
+        setattr(self.instance, name, value)
+
+    def build(self):
+        '''Build an instance of `class`.'''
+        config_attr_names = [x for x in dir(self.instance) if not x.startswith('_')]
+        for x in config_attr_names:
+            attr = getattr(self.instance, x)
+            if callable(attr):
+                setattr(self.instance, x, attr(self.instance))
+        return self.instance
 
 
 class NodeConfiguration(object):

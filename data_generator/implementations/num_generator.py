@@ -8,7 +8,7 @@ from data_generator.internal.compression import Compression
 
 
 def _gen_data(num_rows, num_columns, names=None):
-     '''Generates data appearing as:
+    '''Generates data appearing as:
 
     val0, val1,   val2,   val3,   ..., valy
     x>>y, x>>y-1, x>>y-2, x>>y-3, ..., x
@@ -20,8 +20,8 @@ def _gen_data(num_rows, num_columns, names=None):
         if callable(names):
             names = [names(x) for x in range(num_columns)]
     else:
-        names = ['val{}'.format(x) for x in num_columns]
-    return {name: (x>>(num_columns-1-col_idx) for x in range(rows)) for col_idx, name in enumerate(names)}
+        names = ['val{}'.format(x) for x in range(num_columns)]
+    return {name: (x>>(num_columns-1-col_idx) for x in range(num_rows)) for col_idx, name in enumerate(names)}
 
 
 def _pq(outputpath, stripe, num_columns, scheme_amount_bytes=int(1.5*1024*1024), compression=Compression.NONE, names=None):
@@ -61,11 +61,11 @@ def _csv(outputpath, stripe, num_columns, names=None):
 
     Returns:
         `(True, num_generated_rows)` on success, `(False, None)` otherwise.'''
-    rows_initial = (stripe*1024*1024)//(num_columns) # rows if each entry was 1 char and 1 separator char.
-    rows = rows_initial // len(str(rows//2)) # we divide this number by median entry len, to get a number of rows compensated for entry size. 
-    df = pandas.DataFrame(_gen_data(rows, num_columns, names=names))
+    num_rows_initial = (stripe*1024*1024)//(num_columns) # rows if each entry was 1 char and 1 separator char.
+    num_rows = num_rows_initial // (len(str(num_rows_initial))) # we divide this number by max entry len, to get a number of rows compensated for entry size. 
+    df = pandas.DataFrame(_gen_data(num_rows, num_columns, names=names))
     df.to_csv(outputpath, sep=',', index=False, mode='w', line_terminator='\n', encoding='utf-8')
-    return True, outputpath, rows
+    return True, num_rows
 
 
 def register():
