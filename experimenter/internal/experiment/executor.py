@@ -108,7 +108,7 @@ def execute(experiment, reservation):
 
 
         # Phase 1: Install RADOS-Ceph and Spark on nodes.
-        print('Installing RADOS-Ceph and Spark on {} nodes...'.format(len(spark_nodes)))
+        print('Installing RADOS-Ceph ({} nodes) and Spark ({} nodes)...'.format(len(ceph_nodes), len(spark_nodes)))
         # Assign designations to RADOS-Ceph nodes.
         for node, designations in zip(ceph_nodes, ceph_config.designations):
             node.extra_info['designations'] = ','.join(x.name.lower() for x in designations)
@@ -130,7 +130,7 @@ def execute(experiment, reservation):
 
 
         # Phase 2: Start Spark and RADOS-Ceph on nodes.
-        print('Starting RADOS-Ceph and Spark on {} nodes...'.format(len(spark_nodes)))
+        print('Starting RADOS-Ceph ({} nodes) and Spark ({} nodes)...'.format(len(ceph_nodes), len(spark_nodes)))
         retval, _ = rados_deploy.start(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, admin_id=ceph_admin_id, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent)
         if not retval:
             printe('Could not start RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
@@ -188,16 +188,16 @@ def execute(experiment, reservation):
             printw('Cancelled experiment {}/{}...'.format(idx+1, num_experiments))
 
 
-        # Phase 5: Stop instances.
-        experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
+        # Phase 6: Stop instances.
+        # experiment.on_stop(config, spark_nodes, ceph_nodes, idx, num_experiments)
 
-        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
-            printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
-            return False
+        # if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+        #     printe('Could not stop Spark deployment (iteration {}/{})'.format(idx+1, num_experiments))
+        #     return False
 
-        if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
-            printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
-            return False
+        # if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_path, silent=config.ceph_silent or config.silent):
+        #     printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
+        #     return False
 
         break # Test completion. TODO: Remove
 

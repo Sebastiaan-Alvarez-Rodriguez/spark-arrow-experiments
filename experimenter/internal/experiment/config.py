@@ -75,7 +75,7 @@ class ExperimentConfiguration(object):
             "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
-        self.spark_application_args = lambda conf: '{} --path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
+        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
         self.spark_extra_jars = []
 
