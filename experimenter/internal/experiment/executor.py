@@ -29,7 +29,7 @@ def _check_reservation_size(configs, reservation):
         printw('Reservation size ({} nodes) is more than we will need at most for this experiment ({} Spark nodes + {} Ceph nodes).'.format(reserved_nodes_len, max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
         return True
     elif reserved_nodes_len < max_node_len:
-        printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes + {} Ceph nodes'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
+        printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes + {} Ceph nodes)'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
         return False
     return True
     
@@ -49,7 +49,7 @@ def _submit_blocking(config, command, spark_connectionwrappers, spark_master_id)
     lines_needed = config.runs
 
     for _try in range(config.tries):
-        if not spark_deploy.submit(metareserve.Reservation([x for x in spark_connectionwrappers.keys()]), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, silent=config.spark_silent or config.silent):
+        if not spark_deploy.submit(metareserve.Reservation([x for x in spark_connectionwrappers.keys()]), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, use_sudo=config.spark_submit_with_sudo, silent=config.spark_silent or config.silent):
             printw('Could not submit application on remote. Used command: {}'.format(command))
             return False
 
@@ -118,13 +118,13 @@ def execute(experiment, reservation):
             printe('Could not install SSH keys for internal cluster communication.')
             return False
 
-        retval, ceph_admin_id = rados_deploy.install(metareserve.Reservation(ceph_nodes), key_path=config.key_path, silent=config.ceph_silent or config.silent, cores=config.ceph_compile_cores)
+        retval, ceph_admin_id = rados_deploy.install(metareserve.Reservation(ceph_nodes), key_path=config.key_path, force_reinstall=config.ceph_force_reinstall, debug=config.ceph_debug, silent=config.ceph_silent or config.silent, cores=config.ceph_compile_cores)
         if not retval:
             printe('Could not install RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
             return False
         # if idx > 0 and sorted_configs[idx-1].num_spark_nodes == num_spark_nodes: #TODO: can skip installation, only have to restart
         experiment.on_install()
-        if not spark_deploy.install(metareserve.Reservation(spark_nodes), key_path=config.key_path, silent=config.spark_silent or config.silent):
+        if not spark_deploy.install(metareserve.Reservation(spark_nodes), key_path=config.key_path, spark_url=config.spark_download_url, force_reinstall=config.spark_force_reinstall, silent=config.spark_silent or config.silent):
             printe('Could not install Spark (iteration {}/{})'.format(idx+1, num_experiments))
             return False
 
@@ -136,10 +136,10 @@ def execute(experiment, reservation):
             printe('Could not start RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
             return False
 
-        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent):
+        if not spark_deploy.stop(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, use_sudo=config.spark_start_stop_with_sudo, silent=config.spark_silent or config.silent):
             printe('Could not stop Spark (iteration {}/{})'.format(idx+1, num_experiments))
             return False
-        retval, spark_master_id, spark_master_url = spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, silent=config.spark_silent or config.silent)
+        retval, spark_master_id, spark_master_url = spark_deploy.start(metareserve.Reservation(spark_nodes), key_path=config.key_path, worker_workdir=config.spark_workdir, use_sudo=config.spark_start_stop_with_sudo, silent=config.spark_silent or config.silent)
         if not retval:
             printe('Could not start Spark (iteration {}/{})'.format(idx+1, num_experiments))
             return False

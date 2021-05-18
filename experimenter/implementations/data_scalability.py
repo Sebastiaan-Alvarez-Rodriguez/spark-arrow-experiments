@@ -12,7 +12,7 @@ def get_experiment():
 
         
 def get_node_configuration():
-    return NodeConfiguration(5, CephConfiguration(
+    return NodeConfiguration(9, CephConfiguration(
         [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD]]))
@@ -32,12 +32,17 @@ class DataScalabilityExperiment(ExperimentInterface):
             list(internal.experiment.ExperimentConfiguration), containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
         data_multipliers = [1024, 2*1024, 4*1024, 8*1024, 16*1024] #Total data sizes: 64, 128, 256, 512, 1024 GB
-        for x in data_multipliers:
-            confbuilder = ExperimentConfigurationBuilder()
-            confbuilder.set('node_config', get_node_configuration())
-            confbuilder.set('stripe', stripe)
-            confbuilder.set('data_multiplier', x)
-            yield confbuilder.build()
+        modes = ['--arrow-only', '--spark-only']
+        for mode in modes:
+            for x in data_multipliers:
+                confbuilder = ExperimentConfigurationBuilder()
+                confbuilder.set('mode', mode)
+                confbuilder.set('runs', 11)
+                confbuilder.set('node_config', get_node_configuration())
+                confbuilder.set('stripe', stripe)
+                confbuilder.set('data_multiplier', x)
+                confbuilder.set('resultloc', '~/results/data_scalability')
+                yield confbuilder.build()
 
 
     def on_distribute(self):

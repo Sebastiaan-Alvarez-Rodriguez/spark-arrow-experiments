@@ -5,7 +5,7 @@ from rados_deploy import Designation
 '''Configuration classes to define experiment behaviour.'''
 
 def _default_node_configuration():
-    return NodeConfiguration(8, CephConfiguration(
+    return NodeConfiguration(9, CephConfiguration(
         [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
         [Designation.MON, Designation.OSD]]))
@@ -38,12 +38,18 @@ class ExperimentConfiguration(object):
 
         # Spark cluster options
         self.spark_silent = False
+        self.spark_start_stop_with_sudo = True # Use sudo to start and stop spark
+        self.spark_submit_with_sudo = False # use 'sudo spark-submit ...' instead of 'spark-submit ...'
         self.spark_workdir = '~/spark_workdir'
+        self.spark_force_reinstall = False
+        self.spark_download_url = 'https://archive.apache.org/dist/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz'
 
         # RADOS-Ceph cluster options
         self.ceph_silent = False
         self.ceph_compile_cores = 16
         self.ceph_mountpoint_path = '/mnt/cephfs'
+        self.ceph_force_reinstall= False
+        self.ceph_debug= False
 
         #Shared cluster options
         self.silent = False # Overrides both `spark_silent` and `ceph_silent` if set to `True`.
