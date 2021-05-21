@@ -8,7 +8,7 @@ from utils.printer import *
 
 def get_experiment():
     '''Pass your defined experiment class in this function so we can find it when loading.'''
-    return DataScalabilityExperiment()
+    return LocalExperiment()
 
         
 def get_node_configuration():
@@ -18,12 +18,13 @@ def get_node_configuration():
         [Designation.MON, Designation.OSD]]))
 
 
-class DataScalabilityExperiment(ExperimentInterface):
+# Performs experiment definition 4 and 5.
+class LocalExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
 
     def __init__(self):
-        super(DataScalabilityExperiment, self).__init__()
+        super(LocalExperiment, self).__init__()
 
 
     def get_configs(self):
@@ -31,7 +32,7 @@ class DataScalabilityExperiment(ExperimentInterface):
         Returns:
             list(internal.experiment.ExperimentConfiguration), containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        data_multipliers = [1024, 2*1024, 4*1024, 8*1024, 16*1024] #Total data sizes: 64, 128, 256, 512, 1024 GB
+        data_multipliers = [16*1024] #Total data size: 1024 GB
         modes = ['--arrow-only', '--spark-only']
         for mode in modes:
             for x in data_multipliers:
@@ -41,7 +42,8 @@ class DataScalabilityExperiment(ExperimentInterface):
                 confbuilder.set('node_config', get_node_configuration())
                 confbuilder.set('stripe', stripe)
                 confbuilder.set('data_multiplier', x)
-                confbuilder.set('resultloc', '~/results/data_scalability')
+                confbuilder.set('ceph_used', False)
+                confbuilder.set('resultloc', '~/results/ceph_experiment')
                 yield confbuilder.build()
 
 

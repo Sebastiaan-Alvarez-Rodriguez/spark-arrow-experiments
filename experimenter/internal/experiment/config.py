@@ -38,7 +38,7 @@ class ExperimentConfiguration(object):
 
         # Spark cluster options
         self.spark_silent = False
-        self.spark_start_stop_with_sudo = True # Use sudo to start and stop spark
+        self.spark_start_stop_with_sudo = False # Use sudo to start and stop spark
         self.spark_submit_with_sudo = False # use 'sudo spark-submit ...' instead of 'spark-submit ...'
         self.spark_workdir = '~/spark_workdir'
         self.spark_force_reinstall = False
@@ -47,9 +47,10 @@ class ExperimentConfiguration(object):
         # RADOS-Ceph cluster options
         self.ceph_silent = False
         self.ceph_compile_cores = 16
-        self.ceph_mountpoint_path = '/mnt/cephfs'
-        self.ceph_force_reinstall= False
-        self.ceph_debug= False
+        self.ceph_mountpoint_dir = '/mnt/cephfs'
+        self.ceph_force_reinstall = False
+        self.ceph_debug = False
+        self.ceph_used = True # If set to False, we don't use Ceph and skip installing/booting/stopping.        
 
         #Shared cluster options
         self.silent = False # Overrides both `spark_silent` and `ceph_silent` if set to `True`.
@@ -57,7 +58,8 @@ class ExperimentConfiguration(object):
 
         # Data deployment params - Check all the possible parameters
         self.data_generator_name = 'num_generator'
-        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf)))
+        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf))) # Local data path.
+        self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_path, conf) if _to_val(conf.ceph_used, conf) else '~/data'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
         self.data_format = 'parquet'
