@@ -59,7 +59,7 @@ class ExperimentConfiguration(object):
         # Data deployment params - Check all the possible parameters
         self.data_generator_name = 'num_generator'
         self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf))) # Local data path.
-        self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_path, conf) if _to_val(conf.ceph_used, conf) else '~/data'
+        self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_dir, conf) if _to_val(conf.ceph_used, conf) else '~/data'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
         self.data_format = 'parquet'
@@ -83,7 +83,7 @@ class ExperimentConfiguration(object):
             "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
-        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_path, conf), fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
+        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_dir, conf), fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
         self.spark_extra_jars = []
 

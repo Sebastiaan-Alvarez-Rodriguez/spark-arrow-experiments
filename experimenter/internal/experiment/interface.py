@@ -10,10 +10,10 @@ class ExperimentInterface(metaclass=abc.ABCMeta):
 
     class_id = 9606858520421092931
 
-    def get_configs(self):
-        '''Get experiment configs.
+    def get_executions(self):
+        '''Get experiment ExecutionInterfaces.
         Returns:
-            list(internal.experiment.ExperimentConfiguration), containing all different setups we want to experiment with.'''
+            `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         raise NotImplementedError
 
 
