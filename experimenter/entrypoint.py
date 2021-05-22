@@ -32,24 +32,25 @@ def _load_experiment(name):
     module = importer.import_full_path(fs.join(experiments_dir(), name))
     return module.get_experiment()
 
-def experiment(name):
-    if not fs.isfile(experiments_dir(), name) and not name.endswith('.py'):
-        name = name+'.py'
-    if not fs.isfile(experiments_dir(), name):
-        printe('Experiment "{}" not found at: {}'.format(name, fs.join(experiments_dir(), name)))
-        return False
 
-    experiment = _load_experiment(name)
+def experiment(names):
+    for idx, name in enumerate(names):
+        if not fs.isfile(experiments_dir(), name) and not name.endswith('.py'):
+            names[idx] = name+'.py'
+        if not fs.isfile(experiments_dir(), name):
+            printe('Experiment "{}" not found at: {}'.format(name, fs.join(experiments_dir(), name)))
+            return False
+
+    experiment_mapping = {name: _load_experiment(name) for name in names}
 
     reservation = read_reservation_cli()
     if not reservation:
         return False
-    print('Starting experiment "{}"...'.format(name))
-    return executor.execute(experiment, reservation)
+    return executor.execute(experiment_mapping, reservation)
 
 
 def add_args(parser):
-    parser.add_argument('experiment', metavar='name', type=str, help='Experiment name to execute.')
+    parser.add_argument('experiments', metavar='name', nargs='+', type=str, help='Experiment name(s) to execute.')
 
 
 def main():
@@ -63,7 +64,7 @@ def main():
 
     args = parser.parse_args()
 
-    retval = experiment(args.experiment)
+    retval = experiment(args.experiments)
 
     if retval:
         prints('Experiment "{}" completed successfully.'.format(args.experiment))
