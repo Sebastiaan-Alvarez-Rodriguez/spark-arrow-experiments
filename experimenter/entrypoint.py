@@ -35,11 +35,12 @@ def _load_experiment(name):
 
 def experiment(names):
     for idx, name in enumerate(names):
-        if not fs.isfile(experiments_dir(), name) and not name.endswith('.py'):
-            names[idx] = name+'.py'
+        if (not fs.isfile(experiments_dir(), name)) and not name.endswith('.py'):
+            name = name+'.py'
         if not fs.isfile(experiments_dir(), name):
             printe('Experiment "{}" not found at: {}'.format(name, fs.join(experiments_dir(), name)))
             return False
+        names[idx] = name
 
     experiment_mapping = {name: _load_experiment(name) for name in names}
 
@@ -67,9 +68,9 @@ def main():
     retval = experiment(args.experiments)
 
     if retval:
-        prints('Experiment "{}" completed successfully.'.format(args.experiment))
+        prints('Experiment {} completed successfully.'.format(', '.join(args.experiments)))
     else:
-        printe('Experiment "{}" experienced an error.'.format(args.experiment))
+        printe('An error occured.')
 
 
     if isinstance(retval, bool):

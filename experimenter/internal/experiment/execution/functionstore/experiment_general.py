@@ -42,7 +42,8 @@ def _submit_blocking(config, command, spark_connectionwrappers, spark_master_id)
     return False
 
 
-def experiment_deploy_default(interface, config, idx, num_experiments):
+def experiment_deploy_default(interface, idx, num_experiments):
+    config = interface.config
     spark_master_id = interface.spark_master_id
     spark_master_url = interface.spark_master_url
     # spark_connectionwrappers
@@ -67,5 +68,5 @@ def experiment_deploy_default(interface, config, idx, num_experiments):
         return False
 
 
-def register_default_experiment_function(interface, config, idx, num_experiments):
-    interface.register('experiment_funcs', lambda iface: experiment_deploy_default(iface, config, idx, num_experiments))
+def register_default_experiment_function(interface, idx, num_experiments):
+    interface.register('experiment_funcs', lambda iface: experiment_deploy_default(iface, idx, num_experiments))

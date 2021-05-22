@@ -58,12 +58,12 @@ class CephExperiment(ExperimentInterface):
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
 
-            executionInterface.register('generate_data_func', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
+            executionInterface.register('generate_data_funcs', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
             executionInterface.register('distribute_func', distribution_general.distribute_default)
+            experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))
-            experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             yield executionInterface
 
 

@@ -13,4 +13,4 @@ def distribute_default(interface):
         return False, None
     rados_ceph_nodes = reservation_nodes[:num_ceph_nodes]
     spark_nodes = reservation_nodes[num_ceph_nodes:num_ceph_nodes+num_spark_nodes]
-    return True, {'spark': spark_nodes, 'rados_ceph': ceph_nodes}
+    return True, {'spark': spark_nodes, 'rados_ceph': rados_ceph_nodes}

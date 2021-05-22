@@ -1,8 +1,19 @@
+import metareserve
+
+from utils.printer import *
+
+
+
+def _func_valid(func):
+    '''Returns `True` if given func is callable or a list of all callables, `False` otherwise.'''
+    return callable(func) or (isinstance(func, list) and any(func) and all(callable(x) for x in func))
+
+
+
 class ExecutionInterface(object):
-    def __init__(self, experiment, config, reservation):
-        self._experiment = experiment
+    def __init__(self, config):
         self._config = config
-        self._reservation = reservation
+        self._reservation = None
         self._distribution = None
         # self._connection_map = None
 
@@ -20,16 +31,22 @@ class ExecutionInterface(object):
         self.uninstall_others_funcs = []
 
     @property
-    def experiment(self):
-        return self._experiment
-
-    @property
     def config(self):
         return self._config
 
     @property
     def reservation(self):
         return self._reservation
+
+    @reservation.setter
+    def reservation(self, value):
+        if self._reservation == None:
+            if isinstance(value, metareserve.Reservation):
+                self._reservation = value
+            else:
+                raise RuntimeError('Require reservation of type metareserve.Reservation. Trying to set reservation of inccorrect type: {}'.format(type(value)))
+        else:
+            raise RuntimeError('Reservation is already set: {}'.format(self._reservation))
 
     @property
     def distribution(self):
@@ -88,7 +105,7 @@ class ExecutionInterface(object):
             if functype.endswith('func'):
                 setattr(self, functype, func)
             else: # We have a 'funcs' attr, should append
-                attr.append(functype)
+                attr.append(func)
             return True
         else:
             printe('Cannot find stage "{}".'.format(functype))
@@ -99,27 +116,35 @@ class ExecutionInterface(object):
         '''Executes experiment setup, calling registered methods as needed.
         Returns:
             `True` on successful execution, `False` otherwise.'''
-        callables_named = {self.distribute_func: 'distribute_func', self.install_spark_func: 'install_spark_func', self.start_spark_func: 'start_spark_func', self.experiment_funcs[0] if self.experiment_funcs else None: 'experiment_funcs', self.stop_spark_func: 'stop_spark_func'}
-        if not all(callable(x) for x in callables_named.keys()):
-            printe('Not all required functions are set in Execution Interface.')
-            callables_missing = [v for k,v in callables_named.items() if not callable(k)]
-            print('Missing:\n{}'.format('\n'.join('\t{}'.format(x) for x in callables_missing)))
+        callables_named = {
+            'distribute_func': self.distribute_func,
+            'install_spark_func': self.install_spark_func,
+            'start_spark_func': self.start_spark_func,
+            'experiment_funcs': self.experiment_funcs,
+            'stop_spark_func': self.stop_spark_func}
+        if not all(_func_valid(x) for x in callables_named.values()):
+            printe('Not all required functions are set to valid values in Execution Interface.')
+            callables_missing = {k:v for k,v in callables_named.items() if not _func_valid(v)}
+            print('Problem(s):\n{}'.format('\n'.join('\t{} (value: {})'.format(k, v) for k,v in callables_missing.items())))
             return False
 
-        retval, *others = self.distribute_func(self):
+        retval, *others = self.distribute_func(self)
         if not retval:
             printe('Could not distribute nodes.')
             return False
+        if not any(others):
+            printe('Distribution function did not return a distribution.')
+            return False
         if not isinstance(others[0], dict):
             raise RuntimeError('Distribution has to be a dict, encountered "{}": {}'.format(type(others[0]), others[0]))
-        if not 'spark' in self._distribution:
+        if not 'spark' in others[0]:
             raise RuntimeError('Distribution function "{}" produced distribution without required "spark" key.'.format(self.distribute_func.__name__))
         self._distribution = others[0]
 
 
-        nodes = set(reservation.nodes)
+        nodes = set(self.reservation.nodes)
         nodes_encountered = set()
-        for k,v in self.distribution.items():
+        for k,v in self._distribution.items():
             print('{} "{}" nodes:\n{}'.format(len(v), k, ''.join('\t{}\n'.format(x) for x in v)))
             nodes_encountered = nodes_encountered.union(v)
         print('Total number of used nodes (each node counted only once): {}.\n'.format(len(nodes_encountered)))
@@ -134,8 +159,8 @@ class ExecutionInterface(object):
             printe('Could not install Spark.')
             return False
 
-        if any self.install_others_funcs:
-            print('Installing other {} components...'.format(len(self.install_others_funcs)))
+        if any(self.install_others_funcs):
+            print('Installing {} other components...'.format(len(self.install_others_funcs)))
         for idx, x in enumerate(self.install_others_funcs):
             if not x(self):
                 printe('Could not execute installation function {}/{}: {}'.format(idx+1, len(self.install_others_funcs), x.__name__))
@@ -146,14 +171,14 @@ class ExecutionInterface(object):
             printe('Could not start Spark.')
             return False
 
-        if any self.start_others_funcs:
-            print('Starting other {} components...'.format(len(self.start_others_funcs)))
+        if any(self.start_others_funcs):
+            print('Starting {} other components...'.format(len(self.start_others_funcs)))
         for idx, x in enumerate(self.start_others_funcs):
             if not x(self):
                 printe('Could not execute start function {}/{}: {}'.format(idx+1, len(self.start_others_funcs), x.__name__))
                 return False
 
-        if any self.generate_data_funcs:
+        if any(self.generate_data_funcs):
             print('Generating data ({} functions)...'.format(len(self.generate_data_funcs)))
         for idx, x in enumerate(self.generate_data_funcs):
             if not x(self):
@@ -165,7 +190,7 @@ class ExecutionInterface(object):
             printe('Could not deploy data.')
             return False
 
-        print('Executing experiment {} function(s)...'.format(len(self.experiment_funcs)))
+        print('Executing {} experiment function(s)...'.format(len(self.experiment_funcs)))
         for idx, x in enumerate(self.experiment_funcs):
             if not x(self):
                 printe('Could not execute experiment function {}/{}: {}'.format(idx+1, len(self.experiment_funcs), x.__name__))
@@ -176,8 +201,8 @@ class ExecutionInterface(object):
             printe('Could not stop Spark.')
             return False
 
-        if any self.stop_others_funcs:
-            print('Stopping other {} components...'.format(len(self.stop_others_funcs)))
+        if any(self.stop_others_funcs):
+            print('Stopping {} other components...'.format(len(self.stop_others_funcs)))
         for idx, x in enumerate(self.stop_others_funcs):
             if not x(self):
                 printe('Could not execute stop function {}/{}: {}'.format(idx+1, len(self.stop_others_funcs), x.__name__))
