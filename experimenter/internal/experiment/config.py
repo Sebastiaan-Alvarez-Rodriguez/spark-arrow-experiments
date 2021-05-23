@@ -71,7 +71,7 @@ class ExperimentConfiguration(object):
         self.compute_columns = 4
 
         # Application deployment params
-        self.resultloc = '~/results'
+        self.resultdir = '~/results' # Resultdir on the remote cluster.
         self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
@@ -79,11 +79,13 @@ class ExperimentConfiguration(object):
         self.spark_java_options = []
         # self.spark_java_options = ['-Dlog4j.configuration=file:{}'.format(fs.join(loc.get_metaspark_log4j_conf_dir(), 'driver_log4j.properties'))]
         self.spark_conf_options = lambda conf: [
-            "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
-            "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.driver.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
+            "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
-        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_dir, conf), fs.join(_to_val(conf.resultloc, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
+        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_dir, conf), fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
         self.spark_extra_jars = []
 

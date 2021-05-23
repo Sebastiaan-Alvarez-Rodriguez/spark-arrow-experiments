@@ -51,7 +51,7 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('node_config', get_node_configuration())
                 configbuilder.set('stripe', stripe)
                 configbuilder.set('data_multiplier', x)
-                configbuilder.set('resultloc', '~/results/ceph_experiment')
+                configbuilder.set('resultdir', '~/results/ceph_experiment')
                 config = configbuilder.build()
                 configs.append(config) 
 

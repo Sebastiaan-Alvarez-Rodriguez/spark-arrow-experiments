@@ -43,7 +43,7 @@ class LocalExperiment(ExperimentInterface):
                 confbuilder.set('stripe', stripe)
                 confbuilder.set('data_multiplier', x)
                 confbuilder.set('ceph_used', False)
-                confbuilder.set('resultloc', '~/results/ceph_experiment')
+                confbuilder.set('resultdir', '~/results/ceph_experiment')
                 yield confbuilder.build()
 
 

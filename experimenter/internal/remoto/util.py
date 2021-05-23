@@ -8,6 +8,7 @@ from experimenter.internal.remoto.ssh_wrapper import RemotoSSHWrapper as _Remoto
 import thirdparty.sshconf as sshconf
 from utils.printer import *
 
+
 def _get_logger(loggername, loglevel):
     logging.basicConfig()
     logger = logging.getLogger(loggername)
@@ -41,6 +42,7 @@ def _connection(remote_hostname, silent, loggername, ssh_configpath=None):
     except Exception as e:
         printe('Could not connect to remote host {}'.format(remote_hostname))
         return None
+
 
 def get_ssh_connection(remote_hostname, silent=True, loggername='logger-'+str(random.randint(0, 2^64-1)), ssh_params=None):
     '''Returns a deploy-spark-wrapped execnet connection.
