@@ -9,7 +9,7 @@ def install_rados_ceph(interface, idx, num_experiments, ceph_nodes, spark_nodes)
     if not rados_deploy.install_ssh(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, cluster_keypair=None, silent=config.ceph_silent or config.silent):
         printe('Could not install SSH keys for internal cluster communication (iteration {}/{})'.format(idx+1, num_experiments))
         return False
-    retval, rados_ceph_admin_id = rados_deploy.install(metareserve.Reservation(ceph_nodes), key_path=config.key_path, force_reinstall=config.ceph_force_reinstall, debug=config.ceph_debug, silent=config.ceph_silent or config.silent, cores=config.ceph_compile_cores)
+    retval, rados_ceph_admin_id = rados_deploy.install(metareserve.Reservation(ceph_nodes), key_path=config.key_path, arrow_url=config.ceph_arrow_url, force_reinstall=config.ceph_force_reinstall, debug=config.ceph_debug, silent=config.ceph_silent or config.silent, cores=config.ceph_compile_cores)
     if not retval:
         printe('Could not install RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
         return False
@@ -24,7 +24,12 @@ def start_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_adm
     reservation = metareserve.Reservation(ceph_nodes+spark_nodes)
     for node, designations in zip(ceph_nodes, ceph_config.designations):
         node.extra_info['designations'] = ','.join(x.name.lower() for x in designations)
-    retval, _ = rados_deploy.start(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
+    if config.ceph_store_type == rados_deploy.StorageType.MEMSTORE:
+        from rados_deploy.start import memstore
+        retval, _ = memstore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, storage_size=config.ceph_memstore_storage_size, silent=config.ceph_silent or config.silent)
+    else:
+        from rados_deploy.start import bluestore
+        retval, _ = bluestore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, device_path=config.ceph_bluestore_path_override, silent=config.ceph_silent or config.silent)
     if not retval:
         printe('Could not start RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
         return False

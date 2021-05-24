@@ -1,6 +1,6 @@
 import utils.fs as fs
 import utils.location as loc
-from rados_deploy import Designation
+from rados_deploy import Designation, StorageType
 
 '''Configuration classes to define experiment behaviour.'''
 
@@ -29,20 +29,22 @@ class ExperimentConfiguration(object):
         self.node_config = _default_node_configuration() # Must be a `NodeConfiguration`. Note: Number of Ceph-nodes must be at least 3.        
         self.tries = 2 # If our application dies X times, we stop trying and move on
         self.sleeptime = 30 # Sleep X seconds between checks
-        self.dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died
+        self.dead_after_tries = 20 # If results have not changed between X block checks, we think the application has died.
         # Unused experiment params
-        self.eventlog_path = None  # Set this to an existing directory to make Spark history server logs
+        self.eventlog_path = None  # Set this to an existing directory to make Spark history server logs.
         self.flamegraph_time = None
         self.flamegraph_only_master = False
         self.flamegraph_only_worker = False
 
         # Spark cluster options
         self.spark_silent = False
-        self.spark_start_stop_with_sudo = False # Use sudo to start and stop spark
-        self.spark_submit_with_sudo = False # use 'sudo spark-submit ...' instead of 'spark-submit ...'
+        self.spark_start_stop_with_sudo = False # Use sudo to start and stop spark.
+        self.spark_submit_with_sudo = False # use 'sudo spark-submit ...' instead of 'spark-submit ...'.
         self.spark_workdir = '~/spark_workdir'
         self.spark_force_reinstall = False
         self.spark_download_url = 'https://archive.apache.org/dist/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz'
+        self.spark_driver_memory = '16G'
+        self.spark_executor_memory = '16G'
 
         # RADOS-Ceph cluster options
         self.ceph_silent = False
@@ -50,7 +52,13 @@ class ExperimentConfiguration(object):
         self.ceph_mountpoint_dir = '/mnt/cephfs'
         self.ceph_force_reinstall = False
         self.ceph_debug = False
-        self.ceph_used = True # If set to False, we don't use Ceph and skip installing/booting/stopping.        
+        self.ceph_used = True # If set to False, we don't use Ceph and skip installing/booting/stopping.
+        self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
+        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/merge_bridge_dev.zip'
+        # bluestore cluster options
+        self.ceph_bluestore_path_override = '/dev/nvme0n1p4' # Must point to a device (e.g. '/dev/nvme0n1p4') or `None`, in which case we don't override the "device_path" extra info of each OSD.
+        # memstore cluster options
+        self.ceph_memstore_storage_size = '10GiB' # Amount of bytes we reserve on OSDs for storing data with memstore.
 
         #Shared cluster options
         self.silent = False # Overrides both `spark_silent` and `ceph_silent` if set to `True`.
@@ -85,7 +93,15 @@ class ExperimentConfiguration(object):
             "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
-        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {}'.format(_to_val(conf.kind, conf), _to_val(conf.ceph_mountpoint_dir, conf), fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)), _to_val(conf.data_format, conf), _to_val(conf.num_columns, conf), _to_val(conf.compute_columns, conf), _to_val(conf.runs, conf))
+        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {} {}'.format(
+            _to_val(conf.kind, conf),
+            _to_val(conf.ceph_mountpoint_dir, conf),
+            fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)),
+            _to_val(conf.data_format, conf),
+            _to_val(conf.num_columns, conf),
+            _to_val(conf.compute_columns, conf),
+            _to_val(conf.runs, conf),
+            _to_val(conf.mode, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
         self.spark_extra_jars = []
 

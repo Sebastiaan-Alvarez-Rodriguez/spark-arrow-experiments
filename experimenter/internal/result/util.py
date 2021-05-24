@@ -15,7 +15,7 @@ def remote_file_find(spark_connectionwrappers, file):
                           `BlockSTATE.BUSY` is returned when no node contained `file` at this time, and the id returned is -1.'''
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(spark_connectionwrappers)) as executor:
         futures_locate = {node: executor.submit(remoto.process.check, wrapper.connection, 'ls {}'.format(file), shell=True) for node, wrapper in spark_connectionwrappers.items()}
-        results = {node: x.result() for node, x in futures_locate.items()}
+        results = {node: x.result()[2] for node, x in futures_locate.items()}
     if any(val == 0 for val in results.values()):
         driver_node_id = next(key.node_id for key, val in results.items() if val == 0)
         return BlockState.COMPLETE, driver_node_id

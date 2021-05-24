@@ -41,7 +41,7 @@ def block(command, args=None, sleeptime=60, dead_after_tries=3):
 
 def block_with_value(command, args=None, sleeptime=60, dead_after_tries=3, return_val=False):
     '''Blocks for given command. Command must return a `BlockState`, and another series of values.
-    If the 'BUSY' state is returned, we sleep for sleeptime seconds. Any other state is seen as a final state, and makes the function return.
+    If the 'BUSY' state is returned, we sleep for sleeptime seconds. 'COMPLETED' and 'FAILED' are seen as final states, which make the function return.
     Note: If the command returns both a BlockState and an additional value, we check the difference with the previous value.
     We return when the value remains unchanged after `dead_after_tries` retries.
 
@@ -68,12 +68,8 @@ def block_with_value(command, args=None, sleeptime=60, dead_after_tries=3, retur
             unchanged = 0
         val_stored = val
 
-        if state != BlockState.BUSY:
-            return state, return_val
-        if state == BlockState.COMPLETE:
-            return BlockState.COMPLETE, val if return_val else BlockState.COMPLETE
-        elif state == BlockState.FAILED:
-            return BlockState.FAILED, val if return_val else BlockState.FAILED
+        if state == BlockState.COMPLETE or state == BlockState.FAILED:
+            return state, val if return_val else state
         time.sleep(sleeptime)
 
     return BlockState.TIMEOUT, val if return_val else BlockState.TIMEOUT

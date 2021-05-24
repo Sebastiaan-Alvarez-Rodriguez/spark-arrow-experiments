@@ -20,9 +20,14 @@ def get_experiment():
         
 def get_node_configuration():
     return NodeConfiguration(9, CephConfiguration(
-        [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD]]))
+        [[Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS]]))
 
 
 # Performs experiment definiion 1 and 3.
@@ -39,7 +44,7 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        data_multipliers = [16*1024] #Total data size: 1024 GB
+        data_multipliers = [1*1024] #Total data size: 64 GB
         modes = ['--arrow-only', '--spark-only']
 
         configs = []
@@ -48,6 +53,8 @@ class CephExperiment(ExperimentInterface):
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', mode)
                 configbuilder.set('runs', 11)
+                configbuilder.set('spark_driver_memory', '60G')
+                configbuilder.set('spark_executor_memory', '60G')
                 configbuilder.set('node_config', get_node_configuration())
                 configbuilder.set('stripe', stripe)
                 configbuilder.set('data_multiplier', x)

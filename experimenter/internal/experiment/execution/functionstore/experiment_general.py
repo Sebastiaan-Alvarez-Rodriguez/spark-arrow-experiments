@@ -53,14 +53,15 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
         if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
             driver_node_id = spark_master_id
         else: # We have to find the node that executes the driver in cluster mode.
-            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, results_loc), sleeptime=10, dead_after_tries=3) 
+            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, results_loc), return_val=True, sleeptime=10, dead_after_tries=3) 
             if state == blocker.BlockState.COMPLETE:
-                driver_node_id = val
+                driver_node_id = val[0]
+                print('Found driver running on node_id={}'.format(driver_node_id))
             else:
                 raise RuntimeError('Could not find results file on any node: {}'.format(results_loc))
 
         driver_node = next(node for node, wrapper in spark_connectionwrappers.items() if node.node_id == driver_node_id)
-        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_loc, lines_needed), sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
+        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_loc, lines_needed), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
         if state == blocker.BlockState.COMPLETE:
             return True
         if state == blocker.BlockState.TIMEOUT:
@@ -75,13 +76,15 @@ def experiment_deploy_default(interface, idx, num_experiments):
     spark_master_url = interface.spark_master_url
 
     spark_connectionwrappers = _get_connections(config, interface.distribution['spark'])
-    homedir = get_user_home(list(spark_connectionwrappers.values())[0])
+    homedir = get_user_home(list(spark_connectionwrappers.values())[0].connection)
 
     make_remote_abspath = lambda string: string.replace('~', homedir) 
 
     cmd_builder = spark_deploy.SubmitCommandBuilder(cmd_type=config.spark_application_type)
     cmd_builder.set_master(spark_master_url)
     cmd_builder.set_deploymode(config.spark_deploymode)
+    cmd_builder.set_driver_memory(config.spark_driver_memory)
+    cmd_builder.set_executor_memory(config.spark_executor_memory)
     cmd_builder.add_java_options(*[make_remote_abspath(x) for x in config.spark_java_options])
     cmd_builder.set_application(config.spark_application_path)
     cmd_builder.add_conf_options(*[make_remote_abspath(x) for x in config.spark_conf_options])

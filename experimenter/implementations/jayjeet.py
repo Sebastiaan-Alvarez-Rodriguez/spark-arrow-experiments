@@ -1,6 +1,13 @@
 from rados_deploy import Designation
 
-from internal.experiment.interface import ExperimentInterface
+from experimenter.internal.experiment.execution.execution_interface import ExecutionInterface
+import experimenter.internal.experiment.execution.functionstore.data_general as data_general
+import experimenter.internal.experiment.execution.functionstore.distribution_general as distribution_general
+import experimenter.internal.experiment.execution.functionstore.experiment_general as experiment_general
+import experimenter.internal.experiment.execution.functionstore.spark as spark
+import experimenter.internal.experiment.execution.functionstore.rados_ceph as rados_ceph
+
+from experimenter.internal.experiment.interface import ExperimentInterface
 from experimenter.internal.experiment.config import ExperimentConfigurationBuilder, ExperimentConfiguration, NodeConfiguration, CephConfiguration
 
 import utils.location as loc
@@ -8,45 +15,63 @@ from utils.printer import *
 
 def get_experiment():
     '''Pass your defined experiment class in this function so we can find it when loading.'''
-    return LocalExperiment()
+    return JayjeetExperiment()
 
         
 def get_node_configuration():
     return NodeConfiguration(9, CephConfiguration(
-        [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD]]))
+        [[Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 4 and 5.
-class LocalExperiment(ExperimentInterface):
+# Performs experiment definiion 1 and 3.
+class JayjeetExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
 
     def __init__(self):
-        super(LocalExperiment, self).__init__()
+        super(JayjeetExperiment, self).__init__()
 
 
-    def get_configs(self):
-        '''Get experiment configs.
+    def get_executions(self):
+        ''''Get experiment ExecutionInterfaces.
         Returns:
-            list(internal.experiment.ExperimentConfiguration), containing all different setups we want to experiment with.'''
+            `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        data_multipliers = [16*1024] #Total data size: 1024 GB
-        modes = ['--arrow-only', '--spark-only']
-        for mode in modes:
-            for x in data_multipliers:
-                confbuilder = ExperimentConfigurationBuilder()
-                confbuilder.set('mode', mode)
-                confbuilder.set('runs', 11)
-                configbuilder.set('spark_driver_memory', '60G')
-                configbuilder.set('spark_executor_memory', '60G')
-                confbuilder.set('node_config', get_node_configuration())
-                confbuilder.set('stripe', stripe)
-                confbuilder.set('data_multiplier', x)
-                confbuilder.set('ceph_used', False)
-                confbuilder.set('resultdir', '~/results/ceph_experiment')
-                yield confbuilder.build()
+        data_multipliers = [1*1024] #Total data size: 64 GB
+        configs = []
+
+        for x in data_multipliers:
+            configbuilder = ExperimentConfigurationBuilder()
+            configbuilder.set('mode', '--spark-only')
+            configbuilder.set('runs', 11)
+            configbuilder.set('node_config', get_node_configuration())
+            configbuilder.set('spark_driver_memory', '60G')
+            configbuilder.set('spark_executor_memory', '60G')
+            configbuilder.set('stripe', stripe)
+            configbuilder.set('data_multiplier', x)
+            configbuilder.set('resultdir', '~/results/jayjeet_experiment')
+            configbuilder.set('ceph_force_reinstall', True)
+            configbuilder.set('ceph_arrow_url', 'https://github.com/uccross/skyhookdm-arrow/archive/refs/heads/fix-memleak-in-cls.zip')
+            config = configbuilder.build()
+            configs.append(config) 
+
+        for idx, config in enumerate(configs):
+            executionInterface = ExecutionInterface(config)
+
+            executionInterface.register('generate_data_funcs', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
+            executionInterface.register('distribute_func', distribution_general.distribute_default)
+            experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
+            rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
+            spark.register_spark_functions(executionInterface, idx, len(configs))
+            rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))
+            yield executionInterface
 
 
     def on_distribute(self):
