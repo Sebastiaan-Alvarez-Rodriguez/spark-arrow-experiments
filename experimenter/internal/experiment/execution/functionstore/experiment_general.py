@@ -61,7 +61,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
                 raise RuntimeError('Could not find results file on any node: {}'.format(results_loc))
 
         driver_node = next(node for node, wrapper in spark_connectionwrappers.items() if node.node_id == driver_node_id)
-        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_loc, lines_needed), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
+        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_loc, lines_needed, config.spark_silent or config.silent), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
         if state == blocker.BlockState.COMPLETE:
             return True
         if state == blocker.BlockState.TIMEOUT:

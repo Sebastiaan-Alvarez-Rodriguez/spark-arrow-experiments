@@ -38,7 +38,14 @@ def start_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_adm
 
 def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, spark_nodes):
     config = interface.config
-    if not rados_deploy.stop(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent):
+
+    if config.ceph_store_type == rados_deploy.StorageType.MEMSTORE:
+        from rados_deploy.stop import memstore as stop_memstore
+        retval = stop_memstore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
+    else:
+        from rados_deploy.stop import bluestore as stop_bluestore
+        retval = stop_bluestore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
+    if not retval:
         printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
         return False
     return True

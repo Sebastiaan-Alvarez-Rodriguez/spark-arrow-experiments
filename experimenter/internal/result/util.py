@@ -22,12 +22,13 @@ def remote_file_find(spark_connectionwrappers, file):
     return BlockState.BUSY, -1
 
 
-def remote_count_lines(connection, file, needed_lines):
+def remote_count_lines(connection, file, needed_lines, silent):
     '''Method to count lines on a file on a remote node.
     Args:
         connection (remoto.Connection): Connection to remote.
         files (str): Filepath to read lines from.
         needed_lines (int): Number of lines we need to return a `BlockState.COMPLETE`.
+        silent (bool): If set, we don't print. Otherwise, we print the amount of found lines.
 
     Returns:
         (BlockState, id). Returns `BlockState.COMPLETE` when the file contained enough lines, along with the number of lines.
@@ -35,6 +36,8 @@ def remote_count_lines(connection, file, needed_lines):
     '''
     out, err, exitcode = remoto.process.check(connection, 'cat {}'.format(file), shell=True)
     num_lines = len(out)
+    if not silent:
+        print('Found {}/{} lines'.format(num_lines, needed_lines))
     if num_lines >= needed_lines:
         return BlockState.COMPLETE, num_lines
     return BlockState.BUSY, num_lines

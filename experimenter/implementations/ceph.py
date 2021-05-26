@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from rados_deploy import Designation
 
 from experimenter.internal.experiment.execution.execution_interface import ExecutionInterface
@@ -44,22 +46,23 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        multipliers = [(64, 16)] #Total data size: 64 GB
+        multipliers = [(64, 16), (128, 8), (256, 4), (512, 2), (1024, 1)] #Total data size: 64 GB
         modes = ['--arrow-only', '--spark-only']
+        timestamp = datetime.now().isoformat()
 
         configs = []
         for mode in modes:
             for (copy_multiplier, link_multiplier) in multipliers:
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', mode)
-                configbuilder.set('runs', 11)
+                configbuilder.set('runs', 31)
                 configbuilder.set('spark_driver_memory', '60G')
                 configbuilder.set('spark_executor_memory', '60G')
                 configbuilder.set('node_config', get_node_configuration())
                 configbuilder.set('stripe', stripe)
                 configbuilder.set('copy_multiplier', copy_multiplier)
                 configbuilder.set('link_multiplier', link_multiplier)
-                configbuilder.set('resultdir', '~/results/ceph_experiment')
+                configbuilder.set('resultdir', '~/results/ceph_experiment/{}_{}/{}'.format(copy_multiplier, link_multiplier, timestamp))
                 config = configbuilder.build()
                 configs.append(config) 
 
