@@ -44,12 +44,12 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        data_multipliers = [1*1024] #Total data size: 64 GB
+        multipliers = [(64, 16)] #Total data size: 64 GB
         modes = ['--arrow-only', '--spark-only']
 
         configs = []
         for mode in modes:
-            for x in data_multipliers:
+            for (copy_multiplier, link_multiplier) in multipliers:
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', mode)
                 configbuilder.set('runs', 11)
@@ -57,7 +57,8 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('spark_executor_memory', '60G')
                 configbuilder.set('node_config', get_node_configuration())
                 configbuilder.set('stripe', stripe)
-                configbuilder.set('data_multiplier', x)
+                configbuilder.set('copy_multiplier', copy_multiplier)
+                configbuilder.set('link_multiplier', link_multiplier)
                 configbuilder.set('resultdir', '~/results/ceph_experiment')
                 config = configbuilder.build()
                 configs.append(config) 

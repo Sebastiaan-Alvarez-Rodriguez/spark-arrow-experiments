@@ -65,7 +65,9 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
         if state == blocker.BlockState.COMPLETE:
             return True
         if state == blocker.BlockState.TIMEOUT:
-            printw('System timeout detected. Current status: {}/{}'.format(val, config.runs))
+            printw('System timeout detected. Current status: {}/{}'.format(val[0], config.runs))
+            if val[0] == 0:
+                printw('No runs have completed. Does the Spark code crash because of an error?')
             lines_needed += 1 # +1 because we need a new line for warming caches.
     return False
 

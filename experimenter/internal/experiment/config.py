@@ -66,10 +66,11 @@ class ExperimentConfiguration(object):
 
         # Data deployment params - Check all the possible parameters
         self.data_generator_name = 'num_generator'
-        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf))) # Local data path.
+        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf))) # Local data path.
         self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_dir, conf) if _to_val(conf.ceph_used, conf) else '~/data'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
-        self.data_multiplier = 20 # makes dataset this factor larger using symlinks (default value multiplies to 64*20=1280MB).
+        self.copy_multiplier =  2 # inflates dataset by this factor using file copies. We generate 1 file, so we end up with 2 files. 
+        self.link_multiplier = 20 # inflates dataset by this factor using hardlinks. We first apply the copy multiplier. Effects stack. For sending 1 file with a copy_multiplier=2 and link_multiplier=16, we end up with 2 files, with 15 hardlinks for each file.
         self.data_format = 'parquet'
         self.num_columns = 4
         self.data_gen_extra_args = None
@@ -80,7 +81,7 @@ class ExperimentConfiguration(object):
 
         # Application deployment params
         self.resultdir = '~/results' # Resultdir on the remote cluster.
-        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.data_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'

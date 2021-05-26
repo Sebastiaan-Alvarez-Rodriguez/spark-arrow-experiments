@@ -23,17 +23,14 @@ def block(command, args=None, sleeptime=60, dead_after_tries=3):
 
     Returns:
         `BlockState`, which callers can use to see what return condition was met.'''
-    val = None
     state = BlockState.INIT
 
     for x in range(dead_after_tries):
         tmp = command(*args) if args else command()
         state = tmp
 
-        if state == BlockState.COMPLETE:
-            return BlockState.COMPLETE
-        elif state == BlockState.FAILED:
-            return BlockState.FAILED
+        if state == BlockState.COMPLETE or state == BlockState.FAILED:
+            return state
         time.sleep(sleeptime)
 
     return BlockState.TIMEOUT
