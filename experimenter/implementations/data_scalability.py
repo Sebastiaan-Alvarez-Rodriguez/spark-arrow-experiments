@@ -41,7 +41,7 @@ class DataScalabilityExperiment(ExperimentInterface):
                 confbuilder.set('node_config', get_node_configuration())
                 confbuilder.set('stripe', stripe)
                 confbuilder.set('data_multiplier', x)
-                confbuilder.set('resultdir', '~/results/data_scalability')
+                confbuilder.set('remote_resultdir', '~/results/data_scalability')
                 yield confbuilder.build()
 
 

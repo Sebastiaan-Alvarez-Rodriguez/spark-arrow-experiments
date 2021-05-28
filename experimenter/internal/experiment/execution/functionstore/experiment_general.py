@@ -42,7 +42,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
         `True` if the run is complete and we collected enough data. `False` if the run crashed too many times.'''
     if spark_connectionwrappers == None:
         spark_connectionwrappers = _get_connections(config, spark_nodes)
-    results_loc = fs.join(config.resultdir, config.resultfile)
+    results_loc = fs.join(config.remote_resultdir, config.resultfile)
     lines_needed = config.runs
 
     for _try in range(config.tries):
