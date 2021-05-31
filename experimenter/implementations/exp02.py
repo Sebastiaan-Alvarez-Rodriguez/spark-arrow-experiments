@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definiion 1 and 3.
+# Performs experiment definiion 2.
 class CephExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -48,7 +48,7 @@ class CephExperiment(ExperimentInterface):
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
         multipliers = [(64, 16)] #Total data size: 64 GB
-        modes = ['--arrow-only', '--spark-only']
+        modes = ['--arrow-only']
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -56,7 +56,7 @@ class CephExperiment(ExperimentInterface):
             for (copy_multiplier, link_multiplier) in multipliers:
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', mode)
-                configbuilder.set('runs', 1)
+                configbuilder.set('runs', 31)
                 configbuilder.set('spark_driver_memory', '60G')
                 configbuilder.set('spark_executor_memory', '60G')
                 configbuilder.set('node_config', get_node_configuration())
@@ -65,6 +65,9 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('link_multiplier', link_multiplier)
                 configbuilder.set('remote_result_dir', fs.join('~', 'results', 'ceph_experiment', '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
                 configbuilder.set('result_dir', fs.join(loc.result_dir(), '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
+                configbuilder.set('spark_conf_options', lambda conf: ExperimentConfigurationBuilder.base_spark_conf_options(conf) + [
+                    "'arrowspark.ceph.userados=false'"
+                ])
                 config = configbuilder.build()
                 configs.append(config)
 

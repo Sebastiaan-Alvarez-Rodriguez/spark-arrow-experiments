@@ -1,4 +1,5 @@
 import concurrent.futures
+import subprocess
 
 import metareserve
 import spark_deploy
@@ -124,6 +125,8 @@ def experiment_fetch_results_default(interface, idx, num_experiments, driver_nod
     spark_master_id = interface.spark_master_id
     spark_nodes = interface.distribution['spark']
 
+    remote_result_loc = fs.join(config.remote_result_dir, config.remote_result_file)
+
     if driver_node_id == None:
         if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
             driver_node_id = spark_master_id
@@ -137,7 +140,7 @@ def experiment_fetch_results_default(interface, idx, num_experiments, driver_nod
                 print('Found driver running on node_id={}'.format(driver_node_id))
             else:
                 raise RuntimeError('Could not find results file on any node: {}'.format(remote_result_loc))
-            driver_node, driver_connection_wrapper = next(x for x in spark_connectionwrappers.items() if node.node_id == driver_node_id)
+            driver_node, driver_connection_wrapper = next((node, wrapper) for node, wrapper in spark_connectionwrappers.items() if node.node_id == driver_node_id)
     else:
         driver_node = next(x for x in spark_nodes if x.node_id == driver_node_id)
         driver_connection_wrapper = _get_connection(config, driver_node)

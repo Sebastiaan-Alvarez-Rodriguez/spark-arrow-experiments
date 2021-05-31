@@ -1,2 +1,5 @@
 __pycache__/
 /application/*
+/results/*
+
+/experimenter/internal/remoto/modules/generated/

@@ -32,6 +32,8 @@ def execute_single(name, experiment, reservation, skip_elements, exp_idx, exp_le
             printw('Failed executing "{}" (which is experiment {}/{}): Execution {}/{}'.format(name, exp_idx+1, exp_len, idx+1, num_executions))
         else:
             prints('Completed "{}" (which is experiment {}/{}): Execution {}/{}'.format(name, exp_idx+1, exp_len, idx+1, num_executions))
+        if idx == 0: # TODO: Remove skipping elements later on
+            skip_elements = {'spark': False, 'ceph': False, 'data': False}
 
 
 def execute(experiment_mapping, reservation, skip_elements):

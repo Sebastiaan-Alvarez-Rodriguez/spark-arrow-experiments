@@ -12,6 +12,7 @@ import experimenter.internal.experiment.execution.functionstore.rados_ceph as ra
 from internal.experiment.interface import ExperimentInterface
 from experimenter.internal.experiment.config import ExperimentConfigurationBuilder, ExperimentConfiguration, NodeConfiguration, CephConfiguration
 
+import utils.fs as fs
 import utils.location as loc
 from utils.printer import *
 
