@@ -1,3 +1,5 @@
+import datetime
+
 from rados_deploy import Designation
 
 from experimenter.internal.experiment.execution.execution_interface import ExecutionInterface
@@ -25,7 +27,7 @@ def get_node_configuration():
         [Designation.MON, Designation.OSD]]))
 
 
-# Performs experiment definition 4 and 5.
+# Performs experiment definition 4.
 class LocalExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -39,23 +41,25 @@ class LocalExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         stripe = 64 # One file should have stripe size of 64MB
-        multipliers = [(1, 16*1024)] #Total data size: 1024 GB
+        multipliers = [(64, 16)] #Total data size: 64GB
         modes = ['--arrow-only', '--spark-only']
-
+        timestamp = datetime.now().isoformat()
         configs = []
         for mode in modes:
             for (copy_multiplier, link_multiplier) in multipliers:
-                confbuilder = ExperimentConfigurationBuilder()
-                confbuilder.set('mode', mode)
-                confbuilder.set('runs', 11)
+                configbuilder = ExperimentConfigurationBuilder()
+                configbuilder.set('mode', mode)
+                configbuilder.set('runs', 31)
                 configbuilder.set('spark_driver_memory', '60G')
                 configbuilder.set('spark_executor_memory', '60G')
-                confbuilder.set('node_config', get_node_configuration())
-                confbuilder.set('stripe', stripe)
+                configbuilder.set('node_config', get_node_configuration())
+                configbuilder.set('stripe', stripe)
                 configbuilder.set('copy_multiplier', copy_multiplier)
                 configbuilder.set('link_multiplier', link_multiplier)
-                confbuilder.set('ceph_used', False)
-                confbuilder.set('remote_result_dir', '~/results/ceph_experiment')
+                configbuilder.set('remote_result_dir', fs.join('~', 'results', 'ceph_experiment', '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
+                configbuilder.set('result_dir', fs.join(loc.result_dir(), '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
+                configbuilder.set('ceph_used', False)
+                config = configbuilder.build()
                 configs.append(config) 
 
         for idx, config in enumerate(configs):
