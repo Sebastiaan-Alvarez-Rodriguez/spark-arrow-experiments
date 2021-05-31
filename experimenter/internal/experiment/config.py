@@ -93,7 +93,7 @@ class ExperimentConfiguration(object):
         self.spark_conf_options = lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)
         self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {} {}'.format(
             _to_val(conf.kind, conf),
-            _to_val(conf.ceph_mountpoint_dir, conf),
+            _to_val(conf.remote_data_dir, conf),
             fs.join(_to_val(conf.remote_result_dir, conf), _to_val(conf.remote_result_file, conf)),
             _to_val(conf.data_format, conf),
             _to_val(conf.num_columns, conf),

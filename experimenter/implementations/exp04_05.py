@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from rados_deploy import Designation
 
@@ -23,9 +23,14 @@ def get_experiment():
         
 def get_node_configuration():
     return NodeConfiguration(9, CephConfiguration(
-        [[Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD, Designation.MGR, Designation.MDS],
-        [Designation.MON, Designation.OSD]]))
+        [[Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MON],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MGR],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS],
+        [Designation.OSD, Designation.MDS]]))
 
 
 # Performs experiment definition 4.
@@ -70,7 +75,7 @@ class LocalExperiment(ExperimentInterface):
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
-            rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
+            data_general.register_deploy_data(executionInterface, idx, len(configs))
 
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))
