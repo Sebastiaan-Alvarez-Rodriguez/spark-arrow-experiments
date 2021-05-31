@@ -49,6 +49,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
     if spark_connectionwrappers == None:
         spark_connectionwrappers = _get_connections(config, spark_nodes)
     remote_result_loc = fs.join(config.remote_result_dir, config.remote_result_file)
+
     lines_needed = config.runs
 
     for _try in range(config.tries):

@@ -63,6 +63,7 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('copy_multiplier', copy_multiplier)
                 configbuilder.set('link_multiplier', link_multiplier)
                 configbuilder.set('remote_result_dir', '~/results/ceph_experiment/{}_{}/{}'.format(copy_multiplier, link_multiplier, timestamp))
+
                 config = configbuilder.build()
                 configs.append(config) 
 

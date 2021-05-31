@@ -50,6 +50,7 @@ class ExperimentConfiguration(object):
         self.ceph_silent = False
         self.ceph_compile_cores = 16
         self.ceph_mountpoint_dir = '/mnt/cephfs'
+        self.ceph_placement_groups = None # Set to an integer for placement groups. If `None`, rados-deploy will use recommended default computation.
         self.ceph_force_reinstall = False
         self.ceph_debug = False
         self.ceph_used = True # If set to False, we don't use Ceph and skip installing/booting/stopping.
@@ -66,7 +67,7 @@ class ExperimentConfiguration(object):
 
         # Data deployment params - Check all the possible parameters
         self.data_generator_name = 'num_generator'
-        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf))) # Local data path.
+        self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf))) # Local data path (which will be exported to remote_data_dir)
         self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_dir, conf) if _to_val(conf.ceph_used, conf) else '~/data'
         self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
         self.copy_multiplier =  2 # inflates dataset by this factor using file copies. We generate 1 file, so we end up with 2 files. 
@@ -84,6 +85,7 @@ class ExperimentConfiguration(object):
         self.result_file = lambda conf: _to_val(conf.remote_result_file, conf) # result file on the local machine.
         self.remote_result_dir = '~/results' # result dir on the remote cluster.
         self.remote_result_file = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'

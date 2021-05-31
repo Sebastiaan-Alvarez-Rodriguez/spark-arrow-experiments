@@ -66,6 +66,7 @@ class LocalExperiment(ExperimentInterface):
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
+
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))
             yield executionInterface
