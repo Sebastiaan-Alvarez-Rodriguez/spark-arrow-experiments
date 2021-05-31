@@ -21,20 +21,20 @@ def _merge_kwargs(x, y):
     return z
 
 
-def execute_single(name, experiment, reservation, exp_idx, exp_len):
+def execute_single(name, experiment, reservation, skip_elements, exp_idx, exp_len):
     executions = list(experiment.get_executions())
 
     num_executions = len(executions)
     for idx, execution in enumerate(executions):
         printc('Executing "{}" (which is experiment {}/{}): Execution {}/{}'.format(name, exp_idx+1, exp_len, idx+1, num_executions), Color.CAN)
         execution.reservation = reservation
-        if not execution.execute():
+        if not execution.execute(skip_elements):
             printw('Failed executing "{}" (which is experiment {}/{}): Execution {}/{}'.format(name, exp_idx+1, exp_len, idx+1, num_executions))
         else:
             prints('Completed "{}" (which is experiment {}/{}): Execution {}/{}'.format(name, exp_idx+1, exp_len, idx+1, num_executions))
 
 
-def execute(experiment_mapping, reservation):
+def execute(experiment_mapping, reservation, skip_elements):
     '''Execute a series of experiments.
     Args:
         experiment_mapping (dict(str, module)): A mapping from experiment name to experiment module.
@@ -52,5 +52,5 @@ def execute(experiment_mapping, reservation):
 
     for idx, (name, experiment) in enumerate(experiment_mapping.items()):
         print('Starting experiment "{}".'.format(name))
-        execute_single(name, experiment, reservation, idx, len(experiment_mapping))
+        execute_single(name, experiment, reservation, skip_elements, idx, len(experiment_mapping))
     return True

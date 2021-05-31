@@ -62,7 +62,7 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('stripe', stripe)
                 configbuilder.set('copy_multiplier', copy_multiplier)
                 configbuilder.set('link_multiplier', link_multiplier)
-                configbuilder.set('resultdir', '~/results/ceph_experiment/{}_{}/{}'.format(copy_multiplier, link_multiplier, timestamp))
+                configbuilder.set('remote_result_dir', '~/results/ceph_experiment/{}_{}/{}'.format(copy_multiplier, link_multiplier, timestamp))
                 config = configbuilder.build()
                 configs.append(config) 
 
@@ -72,6 +72,7 @@ class CephExperiment(ExperimentInterface):
             executionInterface.register('generate_data_funcs', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
+            experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))

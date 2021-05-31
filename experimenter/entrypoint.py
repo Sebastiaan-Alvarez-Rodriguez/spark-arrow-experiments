@@ -33,7 +33,7 @@ def _load_experiment(name):
     return module.get_experiment()
 
 
-def experiment(names):
+def experiment(names, skip_elements):
     for idx, name in enumerate(names):
         if (not fs.isfile(experiments_dir(), name)) and not name.endswith('.py'):
             name = name+'.py'
@@ -47,12 +47,15 @@ def experiment(names):
     reservation = read_reservation_cli()
     if not reservation:
         return False
-    return executor.execute(experiment_mapping, reservation)
+    return executor.execute(experiment_mapping, reservation, skip_elements)
 
 
 def add_args(parser):
     parser.add_argument('experiments', metavar='name', nargs='+', type=str, help='Experiment name(s) to execute.')
-
+    parser.add_argument('--debug', help='Perform debug run (no-start, no-data-deploy', action='store_true')
+    parser.add_argument('--no-start-ceph', dest='no_start_ceph', help='Skip starting RADOS-Ceph for the initial run.', action='store_true')
+    parser.add_argument('--no-start-spark', dest='no_start_spark', help='Skip starting Spark for the initial run.', action='store_true')
+    parser.add_argument('--no-deploy-data', dest='no_deploy_data',help='Skip deploying data for the initial run.', action='store_true')
 
 def main():
     parser = argparse.ArgumentParser(
@@ -65,7 +68,9 @@ def main():
 
     args = parser.parse_args()
 
-    retval = experiment(args.experiments)
+    skip_elements = {'ceph': args.no_start_ceph, 'spark': args.no_start_spark, 'data': args.no_deploy_data}
+
+    retval = experiment(args.experiments, skip_elements)
 
     if retval:
         prints('Experiment {} completed successfully.'.format(', '.join(args.experiments)))

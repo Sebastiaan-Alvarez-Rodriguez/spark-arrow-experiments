@@ -54,7 +54,7 @@ class ExperimentConfiguration(object):
         self.ceph_debug = False
         self.ceph_used = True # If set to False, we don't use Ceph and skip installing/booting/stopping.
         self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
-        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/merge_bridge_dev.zip'
+        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/5.0.0-upgrade_dev.zip'
         # bluestore cluster options
         self.ceph_bluestore_path_override = '/dev/nvme0n1p4' # Must point to a device (e.g. '/dev/nvme0n1p4') or `None`, in which case we don't override the "device_path" extra info of each OSD.
         # memstore cluster options
@@ -80,16 +80,18 @@ class ExperimentConfiguration(object):
         self.compute_columns = 4
 
         # Application deployment params
-        self.resultdir = '~/results' # Resultdir on the remote cluster.
-        self.resultfile = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
+        self.result_dir = lambda conf: loc.result_dir() # result dir on the local machine.
+        self.result_file = lambda conf: _to_val(conf.remote_result_file, conf) # result file on the local machine.
+        self.remote_result_dir = '~/results' # result dir on the remote cluster.
+        self.remote_result_file = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
         self.spark_application_type = 'java'
         self.spark_deploymode = 'cluster'
         self.spark_java_options = []
         # self.spark_java_options = ['-Dlog4j.configuration=file:{}'.format(fs.join(loc.get_metaspark_log4j_conf_dir(), 'driver_log4j.properties'))]
         self.spark_conf_options = lambda conf: [
-            "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)))),
-            "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)))),
+            "'spark.driver.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.remote_result_dir, conf), _to_val(conf.remote_result_file, conf)))),
+            "'spark.executor.extraJavaOptions={}'".format('-Dfile={} -Dio.netty.allocator.directMemoryCacheAlignment=64'.format(fs.join(_to_val(conf.remote_result_dir, conf), _to_val(conf.remote_result_file, conf)))),
             "'spark.driver.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
@@ -97,7 +99,7 @@ class ExperimentConfiguration(object):
         self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {} {}'.format(
             _to_val(conf.kind, conf),
             _to_val(conf.ceph_mountpoint_dir, conf),
-            fs.join(_to_val(conf.resultdir, conf), _to_val(conf.resultfile, conf)),
+            fs.join(_to_val(conf.remote_result_dir, conf), _to_val(conf.remote_result_file, conf)),
             _to_val(conf.data_format, conf),
             _to_val(conf.num_columns, conf),
             _to_val(conf.compute_columns, conf),

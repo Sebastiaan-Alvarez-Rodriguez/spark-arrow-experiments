@@ -17,6 +17,12 @@ def _merge_kwargs(x, y):
     z.update(y)
     return z
 
+def _get_connection(config, node):
+    ssh_kwargs = {'IdentitiesOnly': 'yes', 'StrictHostKeyChecking': 'no'}
+    if config.key_path:
+        ssh_kwargs['IdentityFile'] = config.key_path
+    return _get_ssh_connection(node.ip_public, silent=config.spark_silent or config.silent, ssh_params=_merge_kwargs(ssh_kwargs, {'User': node.extra_info['user']}))
+
 
 def _get_connections(config, spark_nodes):
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(spark_nodes)) as executor:
@@ -42,7 +48,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
         `True` if the run is complete and we collected enough data. `False` if the run crashed too many times.'''
     if spark_connectionwrappers == None:
         spark_connectionwrappers = _get_connections(config, spark_nodes)
-    results_loc = fs.join(config.resultdir, config.resultfile)
+    remote_result_loc = fs.join(config.remote_result_dir, config.remote_result_file)
     lines_needed = config.runs
 
     for _try in range(config.tries):
@@ -53,15 +59,15 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, spark_connec
         if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
             driver_node_id = spark_master_id
         else: # We have to find the node that executes the driver in cluster mode.
-            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, results_loc), return_val=True, sleeptime=10, dead_after_tries=3) 
+            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, remote_result_loc), return_val=True, sleeptime=10, dead_after_tries=3) 
             if state == blocker.BlockState.COMPLETE:
                 driver_node_id = val[0]
                 print('Found driver running on node_id={}'.format(driver_node_id))
             else:
-                raise RuntimeError('Could not find results file on any node: {}'.format(results_loc))
+                raise RuntimeError('Could not find results file on any node: {}'.format(remote_result_loc))
 
         driver_node = next(node for node, wrapper in spark_connectionwrappers.items() if node.node_id == driver_node_id)
-        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, results_loc, lines_needed, config.spark_silent or config.silent), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
+        state, val = blocker.block_with_value(func_util.remote_count_lines, args=(spark_connectionwrappers[driver_node].connection, remote_result_loc, lines_needed, config.spark_silent or config.silent), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
         if state == blocker.BlockState.COMPLETE:
             return True
         if state == blocker.BlockState.TIMEOUT:
@@ -103,5 +109,51 @@ def experiment_deploy_default(interface, idx, num_experiments):
         return False
 
 
+def experiment_fetch_results_default(interface, idx, num_experiments, driver_node_id=None):
+    '''Fetches results from the Spark node running the driver.
+    Args:
+        interface (ExperimentInterface): Experiment we are running right now.
+        idx (int): Experiment index number. 0 for first experiment, 1 for seconds, etc.
+        num_experiments (int): Amount of experiments we will run.
+        driver_node_id (optional int): If set, skips searching for the driver node. Assumes node with given id is the driver instead.
+
+    Returns:
+        `True` on success, `False` on failure.'''
+    config = interface.config
+    spark_master_id = interface.spark_master_id
+    spark_nodes = interface.distribution['spark']
+
+    if driver_node_id == None:
+        if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
+            driver_node_id = spark_master_id
+            driver_node = next(x for x in spark_nodes if x.node_id == driver_node_id)
+            driver_connection_wrapper = _get_connection(config, driver_node)
+        else: # We have to find the node that executes the driver in cluster mode.
+            spark_connectionwrappers = _get_connections(config, spark_nodes)
+            state, val = blocker.block_with_value(func_util.remote_file_find, args=(spark_connectionwrappers, remote_result_loc), return_val=True, sleeptime=10, dead_after_tries=3) 
+            if state == blocker.BlockState.COMPLETE:
+                driver_node_id = val[0]
+                print('Found driver running on node_id={}'.format(driver_node_id))
+            else:
+                raise RuntimeError('Could not find results file on any node: {}'.format(remote_result_loc))
+            driver_node, driver_connection_wrapper = next(x for x in spark_connectionwrappers.items() if node.node_id == driver_node_id)
+    else:
+        driver_node = next(x for x in spark_nodes if x.node_id == driver_node_id)
+        driver_connection_wrapper = _get_connection(config, driver_node)
+
+    fs.mkdir(config.result_dir, exist_ok=True)
+    
+    target_loc = fs.join(config.result_dir, config.result_file)
+    if fs.isfile(target_loc):
+        printw('Resultfile "{}" already exists, overwriting...'.format(target_loc))
+        fs.rm(target_loc)
+    return subprocess.call('rsync -e "ssh -F {}" -q -aHAX --inplace {}:{} {}'.format(driver_connection_wrapper.ssh_config.name, driver_node.ip_public, remote_result_loc, target_loc), shell=True) == 0
+
+
+
 def register_default_experiment_function(interface, idx, num_experiments):
     interface.register('experiment_funcs', lambda iface: experiment_deploy_default(iface, idx, num_experiments))
+
+
+def register_default_result_fetch_function(interface, idx, num_experiments):
+    interface.register('result_fetch_funcs', lambda iface: experiment_fetch_results_default(iface, idx, num_experiments))

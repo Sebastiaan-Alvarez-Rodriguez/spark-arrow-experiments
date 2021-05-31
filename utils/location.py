@@ -15,3 +15,7 @@ def data_generation_dir():
 def application_dir():
     '''Directory containing executables to deploy (or symlinks to them).'''
     return fs.join(root(), 'application')
+
+def result_dir():
+    '''Directory to contain results.'''
+    return fs.join(root(), 'results')
