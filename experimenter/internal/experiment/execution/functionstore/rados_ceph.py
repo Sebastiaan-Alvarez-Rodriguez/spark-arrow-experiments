@@ -1,3 +1,4 @@
+import data_deploy
 import metareserve
 import rados_deploy
 
@@ -53,7 +54,8 @@ def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, spark_nodes):
 
 def deploy_data_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_admin_id, spark_nodes):
     config = interface.config
-    if not rados_deploy.deploy(metareserve.Reservation(ceph_nodes+spark_nodes), paths=[config.data_path], key_path=config.key_path, admin_id=rados_ceph_admin_id, stripe=config.stripe, copy_multiplier=config.copy_multiplier, link_multiplier=config.link_multiplier, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent):
+    kwargs = {'admin_id': rados_ceph_admin_id, 'stripe': config.stripe}
+    if not data_deploy.deploy(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, paths=[config.data_path], dest=config.remote_data_dir, copy_multiplier=config.copy_multiplier, link_multiplier=config.link_multiplier, silent=config.ceph_silent or config.silent, plugin='rados_deploy', **kwargs)
         printe('Data deployment on RADOS-Ceph failed (iteration {}/{})'.format(idx+1, num_experiments))
         return False
     return True
