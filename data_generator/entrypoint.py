@@ -30,8 +30,8 @@ def add_args(parser):
     parser.add_argument('--generator', type=str, default=_default_generator(), help='Data generator to execute (default={}).'.format(_default_generator()))
     parser.add_argument('--stripe', metavar='amount', type=int, default=_default_stripe(), help='Striping, in megabytes (default={}MB). Must be a multiple of 4. Every file has to be smaller than stripe size.'.format(_default_stripe()))
     parser.add_argument('--num-columns', dest='num_columns', type=int, default=4, help='Number of columns to generate (default=4).')
-    parser.add_argument('--extra-args', dest='extra_args', type=str, nargs='+', default='', help='Extra args to pass to generator.')
-    parser.add_argument('--extra-kwargs', dest='extra_kwargs', type=str, nargs='+', default='', help='Extra kwargs to pass to generator.')
+    parser.add_argument('--extra-args', metavar='arg', dest='extra_args', type=str, nargs='+', default='', help='Extra args to pass to generator.')
+    parser.add_argument('--extra-kwargs', metavar='kwarg', dest='extra_kwargs', type=str, nargs='+', default='', help='Extra kwargs to pass to generator.')
 
 def main():
     parser = argparse.ArgumentParser(

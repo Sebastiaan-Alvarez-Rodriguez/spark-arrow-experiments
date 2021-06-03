@@ -4,7 +4,7 @@ import subprocess
 
 import remoto
 
-from experimenter.internal.remoto.util import get_ssh_connection as _get_ssh_connection
+from experimenter.internal.remoto.ssh_wrapper import get_wrappers, close_wrappers
 import utils.fs as fs
 
 import experimenter.internal.data as data
@@ -19,7 +19,7 @@ def _merge_kwargs(x, y):
     return z
 
 
-def deploy_data_default(interface, idx, num_experiments, nodes):
+def deploy_data_default(interface, idx, num_experiments, nodes, connectionwrappers=None):
     config = interface.config
     path = config.data_path
     with concurrent.futures.ThreadPoolExecutor(max_workers=cpu_count()-1) as executor:
@@ -28,10 +28,14 @@ def deploy_data_default(interface, idx, num_experiments, nodes):
             ssh_kwargs['IdentityFile'] = config.key_path
         else:
             printw('Connections have no assigned ssh key. Prepare to fill in your password often.')
-        futures_connection = {x: executor.submit(_get_ssh_connection, x.ip_public, silent=True, ssh_params=_merge_kwargs(ssh_kwargs, {'User': x.extra_info['user']})) for x in nodes}
-        connectionwrappers = {k: v.result() for k,v in futures_connection.items()}
+
+        local_connections = connectionwrappers == None
+        if local_connections:
+            connectionwrappers = get_wrappers(nodes, lambda node: node.ip_public, ssh_params=lambda node: _merge_kwargs(ssh_kwargs, {'User': node.extra_info['user']}), silent=True)
         if any(x for x in connectionwrappers if not x):
             printe('Could not connect to some nodes.')
+            if local_connections:
+                close_wrappers(connectionwrappers)
             return False
         if not (config.spark_silent or config.silent):
             print('Transferring data...')
@@ -39,10 +43,15 @@ def deploy_data_default(interface, idx, num_experiments, nodes):
         futures_mkdir = [executor.submit(remoto.process.check, x.connection, 'mkdir -p {}'.format(config.remote_data_dir), shell=True) for x in connectionwrappers.values()]
         if not all(x.result()[2] == 0 for x in futures_mkdir):
             printe('Could not create data destination directory for all nodes.')
+            if local_connections:
+                close_wrappers(connectionwrappers)
             return False
 
         fun = lambda path, node, connectionwrapper: subprocess.call('rsync -e "ssh -F {}" -q -aHAX --inplace {} {}:{}'.format(connectionwrapper.ssh_config.name, path, node.ip_public, fs.join(config.remote_data_dir, fs.basename(path))), shell=True) == 0
         futures_rsync = [executor.submit(fun, path, node, connectionwrapper) for node, connectionwrapper in connectionwrappers.items()]
+        
+        if local_connections:
+            close_wrappers(connectionwrappers)
         if not all(x.result() for x in futures_rsync):
             printe('Could not connect to some nodes.')
             return False

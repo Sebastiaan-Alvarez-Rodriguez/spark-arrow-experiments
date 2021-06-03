@@ -7,7 +7,6 @@ import rados_deploy
 
 import experimenter.internal.data as data
 from experimenter.internal.experiment.interface import ExperimentInterface
-from experimenter.internal.remoto.util import get_ssh_connection as _get_ssh_connection
 import experimenter.internal.experiment.blocker as blocker
 import experimenter.internal.result.util as func_util
 import utils.fs as fs
