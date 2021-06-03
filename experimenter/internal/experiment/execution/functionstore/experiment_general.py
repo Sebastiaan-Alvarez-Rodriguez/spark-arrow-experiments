@@ -29,7 +29,7 @@ def _get_connections(config, spark_nodes):
     ssh_kwargs = {'IdentitiesOnly': 'yes', 'StrictHostKeyChecking': 'no'}
     if config.key_path:
         ssh_kwargs['IdentityFile'] = config.key_path
-    return get_wrappers(spark_nodes, lambda node: node.ip_public, ssh_params=lambda node: _merge_kwargs(ssh_kwargs, {'User': x.extra_info['user']}), silent=config.spark_silent or config.silent)
+    return get_wrappers(spark_nodes, lambda node: node.ip_public, ssh_params=lambda node: _merge_kwargs(ssh_kwargs, {'User': node.extra_info['user']}), silent=config.spark_silent or config.silent)
 
 
 def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwrappers=None):
@@ -51,11 +51,19 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
 
     lines_needed = config.runs
 
+    if any(True for path in config.local_application_paths if not (fs.exists(path or fs.issymlink(path)))):
+        printe('Application data transfer found non-existing source paths:')
+        for path in config.local_application_paths:
+            if not (fs.exists(path) or fs.issymlink(path)):
+                print('    {}'.format(path))
+        printe('Mofidy config variable "local_application_paths" to change/remove these paths, or make sure files exist in the correct location.')
+        return False
+
     for _try in range(config.tries):
         if not spark_deploy.submit(metareserve.Reservation(spark_nodes), command, paths=config.local_application_paths, key_path=config.key_path, master_id=spark_master_id, use_sudo=config.spark_submit_with_sudo, silent=config.spark_silent or config.silent):
             printw('Could not submit application on remote. Used command: {}'.format(command))
             if local_connections:
-                close_wrappers(connectionwrappers.values())
+                close_wrappers(connectionwrappers)
             return False
 
         if config.spark_deploymode == 'client': # We know the driver is executed on the spark master node in client mode.
@@ -67,14 +75,14 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
                 print('Found driver running on node_id={}'.format(driver_node_id))
             else:
                 if local_connections:
-                    close_wrappers(connectionwrappers.values())
+                    close_wrappers(connectionwrappers)
                 raise RuntimeError('Could not find results file on any node: {}'.format(remote_result_loc))
 
         driver_node = next(node for node, wrapper in connectionwrappers.items() if node.node_id == driver_node_id)
         state, val = blocker.block_with_value(func_util.remote_count_lines, args=(connectionwrappers[driver_node].connection, remote_result_loc, lines_needed, config.spark_silent or config.silent), return_val=True, sleeptime=config.sleeptime, dead_after_tries=config.dead_after_tries)
         if state == blocker.BlockState.COMPLETE:
             if local_connections:
-                close_wrappers(connectionwrappers.values())
+                close_wrappers(connectionwrappers)
             return True
         if state == blocker.BlockState.TIMEOUT:
             printw('System timeout detected. Current status: {}/{}'.format(val[0], config.runs))
@@ -82,7 +90,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
                 printw('No runs have completed. Does the Spark code crash because of an error?')
             lines_needed += 1 # +1 because we need a new line for warming caches.
     if local_connections:
-            close_wrappers(connectionwrappers.values())
+            close_wrappers(connectionwrappers)
     return False
 
 
@@ -114,7 +122,7 @@ def experiment_deploy_default(interface, idx, num_experiments, connectionwrapper
     retval = _submit_blocking(config, command, interface.distribution['spark'], spark_master_id, connectionwrappers=connectionwrappers)
 
     if local_connections:
-        close_wrappers(connectionwrappers.values())
+        close_wrappers(connectionwrappers)
 
     if retval:
         prints('Experiment completed! (iteration {}/{})'.format(idx+1, num_experiments))
@@ -153,7 +161,7 @@ def experiment_fetch_results_default(interface, idx, num_experiments, driver_nod
         else: # We have to find the node that executes the driver in cluster mode.
             tmp_connectionwrappers = _get_connections(config, spark_nodes)
             state, val = blocker.block_with_value(func_util.remote_file_find, args=(tmp_connectionwrappers, remote_result_loc), return_val=True, sleeptime=10, dead_after_tries=3) 
-            close_wrappers(tmp_connectionwrappers.values())
+            close_wrappers(tmp_connectionwrappers)
             if state == blocker.BlockState.COMPLETE:
                 driver_node_id = val[0]
                 print('Found driver running on node_id={}'.format(driver_node_id))
