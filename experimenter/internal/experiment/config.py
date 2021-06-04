@@ -123,7 +123,7 @@ class ExperimentConfiguration(object):
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
         ]
         if not conf.ceph_used:
-            base.append("'arrowspark.ceph.userados=false'") # This rule ensures the connector reads using a regular filesystem reader.
+            base.append("'spark.arrowspark.ceph.userados=false'") # This rule ensures the connector reads using a regular filesystem reader.
         return base
 
 

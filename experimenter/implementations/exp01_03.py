@@ -56,7 +56,7 @@ class CephExperiment(ExperimentInterface):
             for (copy_multiplier, link_multiplier) in multipliers:
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', mode)
-                configbuilder.set('runs', 31)
+                configbuilder.set('runs', 1)
                 configbuilder.set('spark_driver_memory', '60G')
                 configbuilder.set('spark_executor_memory', '60G')
                 configbuilder.set('node_config', get_node_configuration())
