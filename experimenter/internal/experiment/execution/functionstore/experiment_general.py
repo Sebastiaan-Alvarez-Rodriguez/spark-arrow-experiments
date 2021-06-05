@@ -51,7 +51,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
 
     lines_needed = config.runs
 
-    if any(True for path in config.local_application_paths if not (fs.exists(path or fs.issymlink(path)))):
+    if any(True for path in config.local_application_paths if not (fs.exists(path) or fs.issymlink(path))):
         printe('Application data transfer found non-existing source paths:')
         for path in config.local_application_paths:
             if not (fs.exists(path) or fs.issymlink(path)):
@@ -178,7 +178,7 @@ def experiment_fetch_results_default(interface, idx, num_experiments, driver_nod
     if fs.isfile(target_loc):
         printw('Resultfile "{}" already exists, overwriting...'.format(target_loc))
         fs.rm(target_loc)
-    retval = subprocess.call('rsync -e "ssh -F {}" -q -aHAX --inplace {}:{} {}'.format(driver_connection_wrapper.ssh_config.name, driver_node.ip_public, remote_result_loc, target_loc), shell=True) == 0
+    retval = subprocess.call('rsync -e "ssh -F {}" -q -aHAX --inplace {}:{} {}'.format(connectionwrapper.ssh_config.name, driver_node.ip_public, remote_result_loc, target_loc), shell=True) == 0
 
     if local_connections:
         close_wrappers([connectionwrapper])
