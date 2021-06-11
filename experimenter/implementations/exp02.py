@@ -68,13 +68,14 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('spark_conf_options', lambda conf: ExperimentConfigurationBuilder.base_spark_conf_options(conf) + [
                     "'arrowspark.ceph.userados=false'"
                 ])
+                configbuilder.set('ceph_used', False)
+                configbuilder.set('remote_data_dir', lambda conf: conf.ceph_mountpoint_dir(conf) if callable(conf.ceph_mountpoint_dir) else conf.ceph_mountpoint_dir)
+                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                 config = configbuilder.build()
                 configs.append(config)
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
-
-            executionInterface.register('generate_data_funcs', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))

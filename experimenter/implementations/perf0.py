@@ -47,18 +47,18 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_queries = [
-            'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
-            'SELECT * FROM table WHERE total_amount > 6', #90% row selectivity, 100% column selectivity
-            'SELECT * FROM table WHERE total_amount > 8', #75% row selectivity, 100% column selectivity
-            'SELECT * FROM table WHERE total_amount > 11', #50% row selectivity, 100% column selectivity
-            'SELECT * FROM table WHERE total_amount > 17', #25% row selectivity, 100% column selectivity
-            'SELECT * FROM table WHERE total_amount > 27', #10% row selectivity, 100% column selectivity
             'SELECT * FROM table WHERE total_amount > 69', #1% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 27', #10% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 17', #25% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 11', #50% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 8', #75% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 6', #90% row selectivity, 100% column selectivity
+            'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
-        row_selectivities = [100, 90, 75, 50, 25, 10, 1]
-        modes = ['--arrow-only', '--spark-only']
+        row_selectivities = [1, 10, 25, 50, 75, 90, 100]
+        modes = ['--spark-only', '--arrow-only']
         stripe = 128 # One file should have stripe size of 64MB
-        multipliers = [(64, 16)] #Total data size: 128 GB
+        multipliers = [(512, 1)] #Total data size: 64 GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -75,7 +75,7 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'ceph_experiment', result_dirname, str(timestamp)))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'perf', result_dirname, str(timestamp)))
                     configbuilder.set('result_dir', fs.join(loc.result_dir(), result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))

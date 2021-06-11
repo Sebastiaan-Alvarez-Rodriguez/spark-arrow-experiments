@@ -65,13 +65,12 @@ class LocalExperiment(ExperimentInterface):
                 configbuilder.set('remote_result_dir', fs.join('~', 'results', 'ceph_experiment', '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
                 configbuilder.set('result_dir', fs.join(loc.result_dir(), '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
                 configbuilder.set('ceph_used', False)
+                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                 config = configbuilder.build()
                 configs.append(config) 
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
-
-            executionInterface.register('generate_data_funcs', lambda iface: data_general.generate_data_default(iface, idx, len(configs)))
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))

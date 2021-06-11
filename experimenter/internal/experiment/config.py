@@ -48,14 +48,17 @@ class ExperimentConfiguration(object):
 
         # RADOS-Ceph cluster options
         self.ceph_silent = False
-        self.ceph_compile_cores = 16
-        self.ceph_mountpoint_dir = '/mnt/cephfs'
+        self.ceph_compile_threads = 16 # Amount of cores to use when compiling Arrow. Never set higher than the number of cores. When out-of-memory occurs, recompile using less cores.
+        self.ceph_osd_op_threads = 16 # Amount of cores to use to serve requests with Ceph OSDs.
+        self.ceph_osd_pool_size = 3 # Amount of replicas per object to store.
+        self.ceph_mountpoint_dir = '/mnt/cephfs' # Default mountpoint location when using Ceph. To find actual remote data dir, use 'remote_data_dir' (data deployment params section).
         self.ceph_placement_groups = None # Set to an integer for placement groups. If `None`, rados-deploy will use recommended default computation.
+        self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
+        self.ceph_use_client_cache = True # If set, uses client I/O cache. Otherwise, disables caching capabilities of CephFS on all client nodes.
+        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/5.0.0-upgrade_dev.zip'
         self.ceph_force_reinstall = False
         self.ceph_debug = False
-        self.ceph_used = True # If set to False, we deploy data to a non-cephFS directory and we tell Arrow-Spark to not use RADOS-based reads.
-        self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
-        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/5.0.0-upgrade_dev.zip'
+        self.ceph_used = True # If set to False, we deploy data to a non-cephFS directory and we tell Arrow-Spark to not use RADOS-based reads, but regular reads instead.
         # bluestore cluster options
         self.ceph_bluestore_path_override = '/dev/nvme0n1p4' # Must point to a device (e.g. '/dev/nvme0n1p4') or `None`, in which case we don't override the "device_path" extra info of each OSD.
         # memstore cluster options
@@ -76,9 +79,7 @@ class ExperimentConfiguration(object):
         self.num_columns = 4
         self.data_gen_extra_args = None
         self.data_gen_extra_kwargs = None
-
-        # Unused data deployment params
-        self.compute_columns = 4
+        self.data_query = ''
 
         # Application deployment params
         self.result_dir = loc.result_dir() # result dir on the local machine.
@@ -91,13 +92,13 @@ class ExperimentConfiguration(object):
         self.spark_deploymode = 'cluster'
         self.spark_java_options = []
         self.spark_conf_options = lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)
-        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --compute-cols {} -r {} {}'.format(
+        self.spark_application_args = lambda conf: '{} --path {} --result-path {} --format {} --num-cols {} --query {} -r {} {}'.format(
             _to_val(conf.kind, conf),
             _to_val(conf.remote_data_dir, conf),
             fs.join(_to_val(conf.remote_result_dir, conf), _to_val(conf.remote_result_file, conf)),
             _to_val(conf.data_format, conf),
             _to_val(conf.num_columns, conf),
-            _to_val(conf.compute_columns, conf),
+            _to_val(conf.data_query, conf),
             _to_val(conf.runs, conf),
             _to_val(conf.mode, conf))
         self.spark_application_mainclass = 'org.arrowspark.benchmark.Benchmark'
