@@ -77,9 +77,6 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('link_multiplier', link_multiplier)
                     configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp02', result_dirname, str(timestamp)))
                     configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp02', result_dirname, str(timestamp)))
-                    configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf) + [
-                        "'arrowspark.ceph.userados=false'"
-                    ])
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
                     configbuilder.set('rados_used', False)
