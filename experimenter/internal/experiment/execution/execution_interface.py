@@ -52,6 +52,21 @@ class ExecutionInterface(object):
 
     @property
     def distribution(self):
+        if not self._distribution:
+            if not _func_valid(self.distribute_func):
+                raise RuntimeError('Did not set distribution function to a valid value.')
+            retval, *others = self.distribute_func(self)
+            if not retval:
+                printe('Could not distribute nodes.')
+                return False
+            if not any(others):
+                printe('Distribution function did not return a distribution.')
+                return False
+            if not isinstance(others[0], dict):
+                raise RuntimeError('Distribution has to be a dict, encountered "{}": {}'.format(type(others[0]), others[0]))
+            if not 'spark' in others[0]:
+                raise RuntimeError('Distribution function "{}" produced distribution without required "spark" key.'.format(self.distribute_func.__name__))
+            self._distribution = others[0]
         return self._distribution
 
 
@@ -119,18 +134,7 @@ class ExecutionInterface(object):
             print('Problem(s):\n{}'.format('\n'.join('\t{} (value: {})'.format(k, v) for k,v in callables_missing.items())))
             return False
 
-        retval, *others = self.distribute_func(self)
-        if not retval:
-            printe('Could not distribute nodes.')
-            return False
-        if not any(others):
-            printe('Distribution function did not return a distribution.')
-            return False
-        if not isinstance(others[0], dict):
-            raise RuntimeError('Distribution has to be a dict, encountered "{}": {}'.format(type(others[0]), others[0]))
-        if not 'spark' in others[0]:
-            raise RuntimeError('Distribution function "{}" produced distribution without required "spark" key.'.format(self.distribute_func.__name__))
-        self._distribution = others[0]
+        _ = self.distribution
 
 
         nodes = set(self.reservation.nodes)
