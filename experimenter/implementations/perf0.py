@@ -58,14 +58,14 @@ class CephExperiment(ExperimentInterface):
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
         modes = ['--spark-only', '--arrow-only']
         stripe = 128 # One file should have stripe size of 64MB
-        multipliers = [(512, 1)] #Total data size: 64 GB
+        multipliers = [(64, 8)] #Total data size: 64 GB
         timestamp = datetime.now().isoformat()
 
         configs = []
         for row_selectivity, data_query in zip(row_selectivities, data_queries):
             for mode in modes:
                 for (copy_multiplier, link_multiplier) in multipliers:
-                    result_dirname = 'cp{}_ln{}_rs{}'.format(copy_multiplier, link_multiplier, row_selectivity)
+                    result_dirname = 'cp{}_ln{}_rs{:03d}'.format(copy_multiplier, link_multiplier, row_selectivity)
                     configbuilder = ExperimentConfigurationBuilder()
                     configbuilder.set('mode', mode)
                     configbuilder.set('runs', 31)

@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 4.
+# Performs experiment definition 5: We read using Spark, from the local NVME.
 class LocalExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -46,28 +46,42 @@ class LocalExperiment(ExperimentInterface):
         ''''Get experiment ExecutionInterfaces.
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
-        stripe = 64 # One file should have stripe size of 64MB
-        multipliers = [(64, 16)] #Total data size: 64GB
-        modes = ['--arrow-only', '--spark-only']
+        data_queries = [
+            'SELECT * FROM table WHERE total_amount > 69', #1% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 27', #10% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 17', #25% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 11', #50% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 8', #75% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 6', #90% row selectivity, 100% column selectivity
+            'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
+        ]
+        row_selectivities = [1, 10, 25, 50, 75, 90, 100]
+        stripe = 128 # One file should have stripe size of 128MB
+        multipliers = [(64, 8)] #Total data size: 64GB
+        modes = ['--spark-only']
         timestamp = datetime.now().isoformat()
         configs = []
-        for mode in modes:
-            for (copy_multiplier, link_multiplier) in multipliers:
-                configbuilder = ExperimentConfigurationBuilder()
-                configbuilder.set('mode', mode)
-                configbuilder.set('runs', 31)
-                configbuilder.set('spark_driver_memory', '60G')
-                configbuilder.set('spark_executor_memory', '60G')
-                configbuilder.set('node_config', get_node_configuration())
-                configbuilder.set('stripe', stripe)
-                configbuilder.set('copy_multiplier', copy_multiplier)
-                configbuilder.set('link_multiplier', link_multiplier)
-                configbuilder.set('remote_result_dir', fs.join('~', 'results', 'ceph_experiment', '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
-                configbuilder.set('result_dir', fs.join(loc.result_dir(), '{}_{}'.format(copy_multiplier, link_multiplier), str(timestamp)))
-                configbuilder.set('ceph_used', False)
-                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
-                config = configbuilder.build()
-                configs.append(config) 
+        for row_selectivity, data_query in zip(row_selectivities, data_queries):
+            for mode in modes:
+                for (copy_multiplier, link_multiplier) in multipliers:
+                    result_dirname = 'cp{}_ln{}_rs{}'.format(copy_multiplier, link_multiplier, row_selectivity)
+                    configbuilder = ExperimentConfigurationBuilder()
+                    configbuilder.set('mode', mode)
+                    configbuilder.set('runs', 31)
+                    configbuilder.set('spark_driver_memory', '60G')
+                    configbuilder.set('spark_executor_memory', '60G')
+                    configbuilder.set('node_config', get_node_configuration())
+                    configbuilder.set('stripe', stripe)
+                    configbuilder.set('copy_multiplier', copy_multiplier)
+                    configbuilder.set('link_multiplier', link_multiplier)
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp05', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp05', result_dirname, str(timestamp)))
+                    configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
+                    configbuilder.set('data_query', '"{}"'.format(data_query))
+                    configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
+                    configbuilder.set('ceph_used', False)
+                    config = configbuilder.build()
+                    configs.append(config) 
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)

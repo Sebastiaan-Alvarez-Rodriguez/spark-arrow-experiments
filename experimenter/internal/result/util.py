@@ -32,8 +32,7 @@ def remote_count_lines(connection, file, needed_lines, silent):
 
     Returns:
         (BlockState, id). Returns `BlockState.COMPLETE` when the file contained enough lines, along with the number of lines.
-                          Returns `BlockState.BUSY` when the file did not contain enough lines, along with the number of lines.
-    '''
+                          Returns `BlockState.BUSY` when the file did not contain enough lines, along with the number of lines.'''
     out, err, exitcode = remoto.process.check(connection, 'cat {}'.format(file), shell=True)
     num_lines = len(out)
     if not silent:

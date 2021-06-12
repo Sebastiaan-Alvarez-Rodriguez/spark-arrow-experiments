@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 2: We read using Arrow, without using RADOS.
+# Performs experiment definition 1: We read using Arrow, using RADOS, without pushing filters.
 class CephExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -56,9 +56,9 @@ class CephExperiment(ExperimentInterface):
             'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
-        stripe = 128 # One file should have stripe size of 64MB
-        multipliers = [(128, 16)] #Total data size: 64 GB
         modes = ['--arrow-only']
+        stripe = 128 # One file should have stripe size of 64MB
+        multipliers = [(64, 16)] #Total data size: 128 GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -75,14 +75,10 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp02', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp02', result_dirname, str(timestamp)))
-                    configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf) + [
-                        "'arrowspark.ceph.userados=false'"
-                    ])
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp06', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp06', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
-                    configbuilder.set('rados_used', False)
                     config = configbuilder.build()
                     configs.append(config)
 

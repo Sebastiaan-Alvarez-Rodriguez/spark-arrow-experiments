@@ -9,7 +9,7 @@ import experimenter.internal.experiment.execution.functionstore.experiment_gener
 import experimenter.internal.experiment.execution.functionstore.spark as spark
 import experimenter.internal.experiment.execution.functionstore.rados_ceph as rados_ceph
 
-from experimenter.internal.experiment.interface import ExperimentInterface
+from internal.experiment.interface import ExperimentInterface
 from experimenter.internal.experiment.config import ExperimentConfigurationBuilder, ExperimentConfiguration, NodeConfiguration, CephConfiguration
 
 import utils.fs as fs
@@ -18,7 +18,7 @@ from utils.printer import *
 
 def get_experiment():
     '''Pass your defined experiment class in this function so we can find it when loading.'''
-    return CephExperiment()
+    return LocalExperiment()
 
         
 def get_node_configuration():
@@ -33,13 +33,13 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 2: We read using Arrow, without using RADOS.
-class CephExperiment(ExperimentInterface):
+# Performs experiment definition 4: We read using Arrow, from the local NVME.
+class LocalExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
 
     def __init__(self):
-        super(CephExperiment, self).__init__()
+        super(LocalExperiment, self).__init__()
 
 
     def get_executions(self):
@@ -56,11 +56,10 @@ class CephExperiment(ExperimentInterface):
             'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
-        stripe = 128 # One file should have stripe size of 64MB
-        multipliers = [(128, 16)] #Total data size: 64 GB
+        stripe = 128 # One file should have stripe size of 128MB
+        multipliers = [(64, 8)] #Total data size: 64GB
         modes = ['--arrow-only']
         timestamp = datetime.now().isoformat()
-
         configs = []
         for row_selectivity, data_query in zip(row_selectivities, data_queries):
             for mode in modes:
@@ -75,23 +74,22 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp02', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp02', result_dirname, str(timestamp)))
-                    configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf) + [
-                        "'arrowspark.ceph.userados=false'"
-                    ])
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp04', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
-                    configbuilder.set('rados_used', False)
+                    configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
+                    configbuilder.set('ceph_used', False)
                     config = configbuilder.build()
-                    configs.append(config)
+                    configs.append(config) 
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
-            rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))
+            data_general.register_deploy_data(executionInterface, idx, len(configs))
+
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))
             yield executionInterface
