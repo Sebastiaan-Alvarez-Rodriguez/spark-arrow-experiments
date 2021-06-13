@@ -4,7 +4,7 @@ class PriorityQueue(object):
         self.comperator = comperator
 
 
-    def _binary_insert(low, high, item):
+    def _binary_insert(self, low, high, item):
         mid = (low+high)//2
         cur_item = self.q[mid]
         if (low == high):
@@ -21,7 +21,11 @@ class PriorityQueue(object):
 
 
     def insert(self, *items):
-        return [_binary_insert(0, len(self), x) for x in items]
+        if not any(self.q):
+            item = next(iter(items))
+            self.q.append(item)
+            items = items[1:]
+        return [self._binary_insert(0, len(self)-1, x) for x in items]
 
 
     def iterate(self):

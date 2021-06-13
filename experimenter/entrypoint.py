@@ -1,5 +1,5 @@
 import argparse
-
+from collections import OrderedDict
 import os
 import sys
 
@@ -33,7 +33,7 @@ def _load_experiment(name):
     return module.get_experiment()
 
 
-def experiment(names, skip_elements):
+def experiment(names):
     for idx, name in enumerate(names):
         if (not fs.isfile(experiments_dir(), name)) and not name.endswith('.py'):
             name = name+'.py'
@@ -42,12 +42,12 @@ def experiment(names, skip_elements):
             return False
         names[idx] = name
 
-    experiment_mapping = {name: _load_experiment(name) for name in names}
+    experiment_mapping = OrderedDict((name, _load_experiment(name)) for name in names)
 
     reservation = read_reservation_cli()
     if not reservation:
         return False
-    return executor.execute(experiment_mapping, reservation, skip_elements)
+    return executor.experiment_execute(experiment_mapping, reservation)
 
 
 def add_args(parser):
@@ -68,9 +68,7 @@ def main():
 
     args = parser.parse_args()
 
-    skip_elements = {'ceph': args.no_start_ceph, 'spark': args.no_start_spark, 'data': args.no_deploy_data}
-
-    retval = experiment(args.experiments, skip_elements)
+    retval = experiment(args.experiments)
 
     if retval:
         prints('Experiment {} completed successfully.'.format(', '.join(args.experiments)))

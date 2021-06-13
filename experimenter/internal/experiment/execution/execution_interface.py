@@ -1,5 +1,6 @@
 import metareserve
 
+from experimenter.distribution.distribution import *
 from utils.printer import *
 
 
@@ -55,25 +56,26 @@ class ExecutionInterface(object):
         if not self._distribution:
             if not _func_valid(self.distribute_func):
                 raise RuntimeError('Did not set distribution function to a valid value.')
-            retval, *others = self.distribute_func(self)
+            retval, distribution = self.distribute_func(self)
             if not retval:
                 printe('Could not distribute nodes.')
                 return False
             if not any(others):
                 printe('Distribution function did not return a distribution.')
                 return False
-            if not isinstance(others[0], dict):
-                raise RuntimeError('Distribution has to be a dict, encountered "{}": {}'.format(type(others[0]), others[0]))
+            if not isinstance(distribution, Distribution):
+                raise RuntimeError('Distribution has to be a dict, encountered "{}": {}'.format(type(distribution), distribution))
             if not 'spark' in others[0]:
                 raise RuntimeError('Distribution function "{}" produced distribution without required "spark" key.'.format(self.distribute_func.__name__))
-            self._distribution = others[0]
+            self._distribution = distribution
         return self._distribution
 
 
     def register(self, functype, func):
         '''Register a function/lambda to be executed during a stage. Stages:
         distribute_func         : required, picks nodes to run Spark and others. 
-                                  Must return `bool, dict(str, list(metareserve.Node))`: First value indicates success, second value is a mapping from string key to reserved nodes.
+                                  Must return `bool, experimenter.distribution.distribution.Distribution)`: 
+                                  First value indicates success, second value is a mapping from string key to reserved nodes.
                                   A key named 'spark' (lowercase) must exist.
         install_spark_func      : required, executed when we need to install Spark.
         install_others_funcs    : optional, installs others. Can register multiple functions, which will be executed in order of registering.
@@ -118,10 +120,10 @@ class ExecutionInterface(object):
             return False
 
 
-    def execute(self, skip_elements):
-        '''Executes experiment setup, calling registered methods as needed.
+    def validate(self):
+        '''Validates self by checking whether valid functions have been set on required function accepters.
         Returns:
-            `True` on successful execution, `False` otherwise.'''
+            `True` when this interface is valid, `False` otherwise.'''
         callables_named = {
             'distribute_func': self.distribute_func,
             'install_spark_func': self.install_spark_func,
@@ -133,94 +135,4 @@ class ExecutionInterface(object):
             callables_missing = {k:v for k,v in callables_named.items() if not _func_valid(v)}
             print('Problem(s):\n{}'.format('\n'.join('\t{} (value: {})'.format(k, v) for k,v in callables_missing.items())))
             return False
-
-        _ = self.distribution
-
-
-        nodes = set(self.reservation.nodes)
-        nodes_encountered = set()
-        for k,v in self._distribution.items():
-            print('{} "{}" nodes:\n{}'.format(len(v), k, ''.join('\t{}\n'.format(x) for x in v)))
-            nodes_encountered = nodes_encountered.union(v)
-        print('Total number of used nodes (each node counted only once): {}.\n'.format(len(nodes_encountered)))
-
-        unused_nodes = nodes.difference(nodes_encountered)
-        if any(unused_nodes):
-            printw('Found {} unused nodes:\n{}'.format(len(unused_nodes), ''.join('\t{}\n'.format(x) for x in unused_nodes)))
-
-
-        if not skip_elements['spark']:
-            print('Installing Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-            if not self.install_spark_func(self):
-                printe('Could not install Spark.')
-                return False
-        if not skip_elements['ceph']:
-            if any(self.install_others_funcs):
-                print('Installing {} other components...'.format(len(self.install_others_funcs)))
-            for idx, x in enumerate(self.install_others_funcs):
-                if not x(self):
-                    printe('Could not execute installation function {}/{}: {}'.format(idx+1, len(self.install_others_funcs), x.__name__))
-                    return False
-
-        if not skip_elements['spark']:
-            print('Starting Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-            if not self.start_spark_func(self):
-                printe('Could not start Spark.')
-                return False
-        if not skip_elements['ceph']:
-            if any(self.start_others_funcs):
-                print('Starting {} other components...'.format(len(self.start_others_funcs)))
-            for idx, x in enumerate(self.start_others_funcs):
-                if not x(self):
-                    printe('Could not execute start function {}/{}: {}'.format(idx+1, len(self.start_others_funcs), x.__name__))
-                    return False
-
-        if not skip_elements['data']:
-            if any(self.generate_data_funcs):
-                print('Generating data ({} functions)...'.format(len(self.generate_data_funcs)))
-            for idx, x in enumerate(self.generate_data_funcs):
-                if not x(self):
-                    printe('Could not execute data generation function {}/{}: {}'.format(idx+1, len(self.generate_data_funcs), x.__name__))
-                    return False
-
-            print('Deploying data...')
-            if callable(self.deploy_data_func) and not self.deploy_data_func(self):
-                printe('Could not deploy data.')
-                return False
-
-        print('Executing {} experiment function(s)...'.format(len(self.experiment_funcs)))
-        for idx, x in enumerate(self.experiment_funcs):
-            if not x(self):
-                printe('Could not execute experiment function {}/{}: {}'.format(idx+1, len(self.experiment_funcs), x.__name__))
-                return False
-
-        if any(self.result_fetch_funcs):
-            print('Aggregating results ({} functions)...'.format(len(self.result_fetch_funcs)))
-            for idx, x in enumerate(self.result_fetch_funcs):
-                if not x(self):
-                    printe('Could not execute result fetch function {}/{}: {}'.format(idx+1, len(self.result_fetch_funcs), x.__name__))
-                    return False
-
-
-        print('Stopping Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-        if not self.stop_spark_func(self):
-            printe('Could not stop Spark.')
-            return False
-
-        if any(self.stop_others_funcs):
-            print('Stopping {} other components...'.format(len(self.stop_others_funcs)))
-        for idx, x in enumerate(self.stop_others_funcs):
-            if not x(self):
-                printe('Could not execute stop function {}/{}: {}'.format(idx+1, len(self.stop_others_funcs), x.__name__))
-                return False
-
-        # print('Uninstalling Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-        # if not self.uninstall_spark_func(self):
-        #     printe('Could not uninstall Spark.')
-        #     return False
-
-        # for idx, x in enumerate(self.uninstall_others_funcs):
-        #     if not x(self):
-        #         printe('Could not execute uninstall function {}/{}: {}'.format(idx+1, len(self.uninstall_others_funcs), x.__name__))
-        #         return False
         return True

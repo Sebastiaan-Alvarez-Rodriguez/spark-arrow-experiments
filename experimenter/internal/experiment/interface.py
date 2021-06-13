@@ -1,13 +1,14 @@
 import abc
+from experimenter.optimizer.optimizer import OptimizationConfig
+from experimenter.optimizer.impl.data import DataOptimization
+from experimenter.optimizer.impl.distribution import DistributionOptimization
 
 def get_experiment():
     '''Implement this function in your experiment, make it return your experiment class'''
     raise NotImplementedError
 
 class ExperimentInterface(metaclass=abc.ABCMeta):
-    '''This interface provides hooks, which get triggered on specific moments in deployment execution.
-    It is your job to implement the functions here.'''
-
+    '''Base Experiment interface. Every experiment implements this base class, and this framework executes the experiments.'''
     class_id = 9606858520421092931
 
     def get_executions(self):
@@ -17,49 +18,21 @@ class ExperimentInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-    def on_distribute(self):
-        '''Function hook, called just before we distribute nodes to tasks, e.g. to perform a Spark/Ceph role.'''
-        pass
+    def get_optimizationconfig(self):
+        '''Get optimizationconfig, which tells which optimizations to apply between executions of this experiment.'''
+        priority_options = { # Note: Highest priority goes first. Also note: Priorities must be unique to ensure consistent behaviour.
+            DataOptimization(): 1,
+            DistributionOptimization(): 2,
+        }
+        return OptimizationConfig(optimizations=list(priority_options.keys()), comperator=lambda x,y: priority_options[x] > priority_options[y])
 
 
-    def on_install(self):
-        '''Function hook, called just before we install the required platforms on the nodes allocated to a task.'''
-        pass
-
-
-    def on_start(self, config, nodes_spark, nodes_ceph, num_experiment, amount_experiments):
-        '''Function hook, called just before we start an experiment. This function is called after resources have been allocated and prepared.
-        Args:
-            config (internal.experiment.ExperimentConfiguration): Current experiment configuration.
-            nodes_spark (tuple(metareserve.Node, list(metareserve.Node))): Spark master, Spark worker nodes.
-            nodes_ceph (tuple(metareserve.Node, list(metareserve.Node))): Ceph admin, Ceph other nodes. Note: The extra_info attribute of each node tells what designations it hosts with the "designations" key. 
-            num_experiment (int): Current experiment run number (e.g. if we now run 4/10, value will be 4).
-            amount_experiments (int): Total amount of experiments to run. (e.g. if we now run 4/10, value will be 10).
-
-        Returns:
-            `True` if we want to proceed with the experiment. `False` if we want to cancel it.'''
+    def accept_global_optimizations(self):
+        '''If set, this experiment allows to use global optimizations from other experiments. This is generally a good idea to enable,
+        as it enables cross-experiment optimizations, and could add other useful optimization groups.
+        Example: If this experiment (A) defines to use optimizations A0, A1, and another experiment B defines optimization B0, then we use optimization A0,A1,B0 for A.
+        If we do not accept global optimizations, we only apply A0 and A1 to A.'''
         return True
-
-
-    def on_stop(self, config, nodes_spark, nodes_ceph, num_experiment, amount_experiments):
-        '''Function hook, called when we stop an experiment. This function is called right after the experiment has completed.
-        Args:
-            config (internal.experiment.ExperimentConfiguration): Current experiment configuration.
-            nodes_spark (tuple(metareserve.Node, list(metareserve.Node))): Spark master, Spark worker nodes.
-            nodes_ceph (tuple(metareserve.Node, list(metareserve.Node))): Ceph admin, Ceph other nodes. Note: The extra_info attribute of each node tells what designations it hosts with the "designations" key. 
-            num_experiment (int): Current experiment run number (e.g. if we now run 4/10, value will be 4).
-            amount_experiments (int): Total amount of experiments to run. (e.g. if we now run 4/10, value will be 10).'''
-        pass
-
-
-    def on_uninstall(self):
-        '''Function hook, called just before we uninstall platforms. Note: Not all tasks and platforms support uninstalling.'''
-        pass
-
-
-    def on_end(self):
-        '''Function hook, called just before we end the experiment.'''
-        pass
 
     @staticmethod
     def is_experiment(obj):
