@@ -79,7 +79,7 @@ class LocalExperiment(ExperimentInterface):
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
                     configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
-                    configbuilder.set('ceph_used', False)
+                    configbuilder.set('rados_used', False)
                     config = configbuilder.build()
                     configs.append(config) 
 

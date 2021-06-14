@@ -79,7 +79,7 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp03', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
-                    configbuilder.set('ceph_used', False)
+                    configbuilder.set('rados_used', False)
                     config = configbuilder.build()
                     configs.append(config)
 
