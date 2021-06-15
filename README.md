@@ -1,5 +1,23 @@
 # spark-arrow-experiments
-Execution framework for testing and doing automated experiments with Spark and Ceph.
+Experimentation guidance framework, for testing and doing automated experiments with Spark and Ceph.
+
+We have 3 independently usable modules:
+ 1. [`experimenter`](/experimenter/): Main experimentation guidance framework.
+ 2. [`data_generator`](/data_generator/): Plugin-based data generator. Use this to generate sample parquet files.
+ 3. [`graph_generator`](/graph_generator/): Simple graph generator, to plot results.
+
+
+## Requirements
+For the experimentation framework, we require:
+ - python>=3.2
+ - metareserve
+ - spark_deploy>=0.1.1
+ - rados_deploy>=0.1.1
+ - data_deploy>=0.5.0
+
+For the data generator, we require:
+ - pandas
+ - pyarrow
 
 
 ## Experiments
@@ -13,31 +31,34 @@ The general cycle all experiments follow:
  7. Stop frameworks
 
 We formalized this concept inside this framework.
-Experiments define how they give shape to this cycle by providing functions to the execution framework.
+Experiments define how they give shape to this cycle by registering functions with the execution framework.
 The execution framework triggers these functions at the correct time in the cycle.
 
 We provided many default function implementations, to be able to perform automated experiments on our own.
 
-To use our experimentation framework, provided in the [`expermenter`](/experimenter/) directory, use
+To use our experimentation framework, provided in the [`expermenter`](/experimenter/) directory, use:
 ```bash
-python3 experimenter/entrypoint.py
+python3 experimenter/entrypoint.py -h
 ```
+
 
 ## Data Generation
-Additionally, we built a simple data generator in the [`data_generator`](/data_generator/) directory.
+We built a simple data generator in the [`data_generator`](/data_generator/) directory.
 Execute it using:
 ```bash
-python3 data_generator/entrypoint.py
+python3 data_generator/entrypoint.py -h
 ```
+By default, generated data is outputted to `/data_generator/generated/`.
+We wrote one plugin, which generates a simple parquet file.
 
-## Requirements
-For the experimentation framework, we require:
- - python>=3.2
- - metareserve
- - spark_deploy>=0.1.1
- - rados_deploy>=0.1.1
- - data_deploy>=0.5.0
 
-For the data generator, we require:
- - pandas
- - pyarrow
+## Graph Generation
+Our basic experiments return a timeseries as datapoints consisting of 2 64-bit integers.
+The first number is the initialization time Spark reader implementations needed to start up.
+The second number is the computation time Spark needed.
+
+To use the graph generator, use:
+```bash
+python3 graph_generator/entrypoint.py -h
+```
+By default, generated graphs are outputted to `/data_generator/generated/`.

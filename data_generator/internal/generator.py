@@ -30,7 +30,9 @@ def generate(generator_name, dest, stripe, num_columns, data_format, extra_args=
         num_columns (int): Number of columns to generate.
         data_format (str): DataFormat to use. See `data_generator.internal.data_format.DataFormat` for options.
         extra_args (optional list(str)): Extra arguments to pass to generator function.
-        extra_kwargs (optional dict(str, str): Extra keyword arguments to pass to generator function.'''
+        extra_kwargs (optional dict(str, str): Extra keyword arguments to pass to generator function.
+    Returns:
+        `True, int` on success, where the second argument is the number of rows written. Returns `False, None` otherwise.'''
     dest = fs.abspath(dest)
     if fs.isdir(dest):
         printe('Given generation location is a directory (need path to (potentially non-existing) file): {}'.format(dest))
