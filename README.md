@@ -42,6 +42,7 @@ python3 experimenter/entrypoint.py -h
 ```
 
 
+
 ## Data Generation
 We built a simple data generator in the [`data_generator`](/data_generator/) directory.
 Execute it using:
@@ -50,6 +51,17 @@ python3 data_generator/entrypoint.py -h
 ```
 By default, generated data is outputted to `/data_generator/generated/`.
 We wrote one plugin, which generates a simple parquet file.
+
+Instead of generating data for the experiments, there are also a few pre-generated files [here](https://github.com/JayjeetAtGithub/datasets).
+To get git lfs objects, use:
+```bash
+apt update
+apt install git-lfs
+git clone https://github.com/JayjeetAtGithub/datasets
+cd datasets/
+git lfs pull
+```
+
 
 
 ## Graph Generation
