@@ -57,7 +57,7 @@ class LocalExperiment(ExperimentInterface):
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
         stripe = 128 # One file should have stripe size of 128MB
-        multipliers = [(64, 8)] #Total data size: 64GB
+        multipliers = [(64, 4)] #Total data size: 32GB
         modes = ['--arrow-only']
         timestamp = datetime.now().isoformat()
         configs = []
@@ -75,7 +75,7 @@ class LocalExperiment(ExperimentInterface):
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
                     configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp04_alt', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04_alt', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
                     configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME

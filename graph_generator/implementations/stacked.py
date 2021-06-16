@@ -5,13 +5,16 @@ import numpy as np
 
 from graph_generator.interface import GeneratorInterface
 import graph_generator.internal.util.storer as storer
+from sklearn.metrics import r2_score
+
+# https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/bar_stacked.html
 
 
 def get_generator(*args, **kwargs):
-    return LinePlot(*args, **kwargs)
+    return StackedBarPlot(*args, **kwargs)
 
 
-class LinePlot(GeneratorInterface):
+class StackedBarPlot(GeneratorInterface):
     '''Simple class to make lineplots.'''
     def __init__(self, *args, **kwargs):
         pass
@@ -36,15 +39,21 @@ class LinePlot(GeneratorInterface):
 
 
     def plot(self, frames, dest=None, show=True, large=False):
-        plot_arr = []
-        label_arr=[]
-        for frame in frames:
-            plot_arr.append(frame.c_arr / 1000000000)
+        plot_i_arr = []
+        plot_c_arr = []
+        label_arr = []
+        ticks_arr = []
+        errors_arr = []
+        for frame in sorted(frames, key=lambda e: (int(e.identifiers['selectivity'][:-1]), e.identifiers['exp'], e.identifiers['producer'])):
+            plot_i_arr.append(frame.i_avgtime)
+            plot_c_arr.append(frame.c_avgtime)
             label_arr.append(str(frame))
-            # ovars = Dimension.open_vars(num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)[0]
-            # label_arr.append((
-            #     'Arrow-Spark: {}'.format(Dimension.make_id_string(frame_arrow, num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)),
-            #     'Spark: {}'.format(Dimension.make_id_string(frame_spark, num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)),))
+            ticks_arr.append(frame.identifiers['selectivity'])
+            # Code below for error whiskers (take note of percentile function to filter out outliers)
+            normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000
+            percentile = np.percentile(normal_frame, 99)
+            errors_arr.append(np.std(normal_frame[normal_frame <= percentile]))
+
         if large:
             fontsize = 28
             font = {
@@ -54,11 +63,22 @@ class LinePlot(GeneratorInterface):
             plt.rc('font', **font)
 
         fig, ax = plt.subplots()
-        for data, label in zip(plot_arr, label_arr):
-            ax.plot(data, label=label)
+
+        ind = np.arange(len(label_arr))
+        width = 0.20
+        ax.bar(ind, plot_i_arr, width, label='InitTime')
+        ax.bar(ind, plot_c_arr, width, yerr=errors_arr, bottom=plot_i_arr, label='ComputeTime', align='center', alpha=0.5, ecolor='black', capsize=10)
+        # Code below for normalization prediction.
+        z = np.polyfit(ind, np.add(plot_i_arr,plot_c_arr), 1)
+        y_hat = np.poly1d(z)(ind)
+        ax.plot(ind, y_hat, '--', label='trend')
+        # Code below for r-squared analytical deviation from normalization prediction.
+        plt.annotate("r-squared = {:.3f}".format(r2_score(np.add(plot_i_arr,plot_c_arr), y_hat)), (0, 1))
 
         ax.set(xlabel='Execution number', ylabel='Time (s)', title='Computation times')
+        plt.xticks(ind, ticks_arr)
         ax.set_ylim(ymin=0)
+
         if large:
             ax.legend(loc='best', fontsize=18, frameon=False)
         else:

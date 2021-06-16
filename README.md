@@ -19,6 +19,12 @@ For the data generator, we require:
  - pandas
  - pyarrow
 
+For the graph generator, we require:
+ - numpy>=1.20.1
+Many tools also require
+ - scipy>=0.19.1
+ - scikit-learn>=0.24.2
+
 
 ## Experiments
 The general cycle all experiments follow:

@@ -25,7 +25,7 @@ def _default_generator():
 def add_args(parser):
     parser.add_argument('paths', nargs='+', help='Result path(s) to read from. Searches recursively for all files in given directory.')
     parser.add_argument('--generator', metavar='name', type=str, default=_default_generator(), help='Graph generator to execute (default={}).'.format(_default_generator()))
-    parser.add_argument('--dest', type=str, help='If set, outputs plot to given output path. Point to a file, with an extension.')
+    parser.add_argument('--dest',  metavar='path', nargs='?', type=str, default=None, const='default.pdf', help='If set, outputs plot to given output path, prefixed with={}. Point to a file, with an extension. If set without value, uses val={}'.format(loc.graph_generator_dir(), 'default.pdf'))
     parser.add_argument('--no-show', dest='no_show', help='Do not show generated graph (useful on servers without xorg forwarding).', action='store_true')
     parser.add_argument('--large', help='If set, generates graphs with larger font.', action='store_true')
     parser.add_argument('--skip-leading', metavar='int', dest='skip_leading', type=int, default=0, help='If set, skips first n readings from every result frame. Supports negative numbers, which mean: Read the last abs(negative_number) values.')

@@ -57,7 +57,7 @@ class LocalExperiment(ExperimentInterface):
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
         stripe = 128 # One file should have stripe size of 128MB
-        multipliers = [(64, 8)] #Total data size: 64GB
+        multipliers = [(64, 4)] #Total data size: 32GB
         modes = ['--spark-only']
         timestamp = datetime.now().isoformat()
         configs = []
