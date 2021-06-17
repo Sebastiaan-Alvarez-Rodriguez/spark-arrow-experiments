@@ -51,6 +51,7 @@ class ExperimentConfiguration(object):
         self.ceph_compile_threads = 16 # Amount of cores to use when compiling Arrow. Never set higher than the number of cores. When out-of-memory occurs, recompile using less cores.
         self.ceph_osd_op_threads = 16 # Amount of cores to use to serve requests with Ceph OSDs.
         self.ceph_osd_pool_size = 3 # Amount of replicas per object to store.
+        self.ceph_osd_max_obj_size = lambda conf: conf.stripe*1024*1024 # Maximum size for a single object. By default, sets to maximum stripe size of an object.
         self.ceph_mountpoint_dir = '/mnt/cephfs' # Default mountpoint location when using Ceph. To find actual remote data dir, use 'remote_data_dir' (data deployment params section).
         self.ceph_placement_groups = None # Set to an integer for placement groups. If `None`, rados-deploy will use recommended default computation.
         self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
@@ -72,7 +73,7 @@ class ExperimentConfiguration(object):
         self.data_generator_name = 'num_generator'
         self.data_path = lambda conf: fs.join(loc.data_generation_dir(), '{}_{}_{:04}_{:06}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf))) # Local data path (which will be exported to remote_data_dir)
         self.remote_data_dir = lambda conf: _to_val(conf.ceph_mountpoint_dir, conf)
-        self.stripe = 64 # Generate a parquet file for a stripe-constraint of X MB.
+        self.stripe = 128 # Generate a parquet file for a stripe-constraint of X MB.
         self.copy_multiplier =  2 # inflates dataset by this factor using file copies. We generate 1 file, so we end up with 2 files. 
         self.link_multiplier = 20 # inflates dataset by this factor using hardlinks. We first apply the copy multiplier. Effects stack. For sending 1 file with a copy_multiplier=2 and link_multiplier=16, we end up with 2 files, with 15 hardlinks for each file.
         self.data_format = 'parquet'

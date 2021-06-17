@@ -27,10 +27,10 @@ def start_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_adm
         node.extra_info['designations'] = ','.join(x.name.lower() for x in designations)
     if config.ceph_store_type == rados_deploy.StorageType.MEMSTORE:
         from rados_deploy.start import memstore
-        retval, _ = memstore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, placement_groups=config.ceph_placement_groups, storage_size=config.ceph_memstore_storage_size, osd_op_threads=config.ceph_osd_op_threads, osd_pool_size=config.ceph_osd_pool_size, use_client_cache=config.ceph_use_client_cache, silent=config.ceph_silent or config.silent)
+        retval, _ = memstore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, placement_groups=config.ceph_placement_groups, storage_size=config.ceph_memstore_storage_size, osd_op_threads=config.ceph_osd_op_threads, osd_pool_size=config.ceph_osd_pool_size, osd_max_obj_size=config.ceph_osd_max_obj_size, use_client_cache=config.ceph_use_client_cache, silent=config.ceph_silent or config.silent)
     else:
         from rados_deploy.start import bluestore
-        retval, _ = bluestore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, placement_groups=config.ceph_placement_groups, device_path=config.ceph_bluestore_path_override, osd_op_threads=config.ceph_osd_op_threads, osd_pool_size=config.ceph_osd_pool_size, use_client_cache=config.ceph_use_client_cache, silent=config.ceph_silent or config.silent)
+        retval, _ = bluestore(reservation, key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, placement_groups=config.ceph_placement_groups, device_path=config.ceph_bluestore_path_override, osd_op_threads=config.ceph_osd_op_threads, osd_pool_size=config.ceph_osd_pool_size, osd_max_obj_size=config.ceph_osd_max_obj_size, use_client_cache=config.ceph_use_client_cache, silent=config.ceph_silent or config.silent)
     if not retval:
         printe('Could not start RADOS-Ceph (iteration {}/{})'.format(idx+1, num_experiments))
         return False
