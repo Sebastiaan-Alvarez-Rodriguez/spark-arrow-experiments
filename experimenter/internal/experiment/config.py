@@ -56,7 +56,7 @@ class ExperimentConfiguration(object):
         self.ceph_placement_groups = None # Set to an integer for placement groups. If `None`, rados-deploy will use recommended default computation.
         self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
         self.ceph_use_client_cache = False # If set, uses client I/O cache. Otherwise, disables caching capabilities of CephFS on all client nodes.
-        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/5.0.0-upgrade_dev.zip'
+        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/rados_connection_cache_dev.zip'
         self.ceph_force_reinstall = False
         self.ceph_debug = False
         self.rados_used = True # If set to False, we deploy data to a non-cephFS directory and we tell Arrow-Spark to not use RADOS-based reads, but regular reads instead.
