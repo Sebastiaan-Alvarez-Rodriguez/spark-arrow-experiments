@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 4: We read using Arrow, from the local NVME.
+# Performs experiment definition 5: We read using Spark, from the local NVME.
 class LocalExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -58,7 +58,7 @@ class LocalExperiment(ExperimentInterface):
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
         stripe = 1024 # One file should have stripe size of 1024MB
         multipliers = [(1, 32)] #Total data size: 32GB
-        modes = ['--arrow-only']
+        modes = ['--spark-only']
         timestamp = datetime.now().isoformat()
         configs = []
         for row_selectivity, data_query in zip(row_selectivities, data_queries):
@@ -74,12 +74,12 @@ class LocalExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp04_bigfile', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04_bigfile', result_dirname, str(timestamp)))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp05_bigfile', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp05_bigfile', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_1024mb.pq'))
+                    configbuilder.set('data_query', '"{}"'.format(data_query))
                     configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
                     configbuilder.set('rados_used', False)
-                    configbuilder.set('data_query', '"{}"'.format(data_query))
                     config = configbuilder.build()
                     configs.append(config) 
 
@@ -88,7 +88,7 @@ class LocalExperiment(ExperimentInterface):
             executionInterface.register('distribute_func', distribution_general.distribute_default)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
-            data_general.register_deploy_data(executionInterface, idx, len(configs), plugin='star_remote')
+            data_general.register_deploy_data(executionInterface, idx, len(configs))
 
             spark.register_spark_functions(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_functions(executionInterface, idx, len(configs))

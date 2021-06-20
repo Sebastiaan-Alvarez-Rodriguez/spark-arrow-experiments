@@ -56,8 +56,8 @@ class LocalExperiment(ExperimentInterface):
             'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
-        stripe = 1024 # One file should have stripe size of 1024MB
-        multipliers = [(1, 32)] #Total data size: 32GB
+        stripe = 512 # One file should have stripe size of 512MB
+        multipliers = [(1, 64)] #Total data size: 32GB
         modes = ['--arrow-only']
         timestamp = datetime.now().isoformat()
         configs = []
@@ -74,9 +74,9 @@ class LocalExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp04_bigfile', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04_bigfile', result_dirname, str(timestamp)))
-                    configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_1024mb.pq'))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp04_halffile', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp04_halffile', result_dirname, str(timestamp)))
+                    configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_512mb.pq'))
                     configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
                     configbuilder.set('rados_used', False)
                     configbuilder.set('data_query', '"{}"'.format(data_query))
