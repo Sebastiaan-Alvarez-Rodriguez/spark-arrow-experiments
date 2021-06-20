@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment definition 1: We read using Arrow, using RADOS, without pushing filters.
+# Performs experiment definition 2: We read using regular Spark, from CephFS.
 class CephExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -56,8 +56,8 @@ class CephExperiment(ExperimentInterface):
             'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
-        modes = ['--arrow-only']
-        stripe = 128 # One file should have stripe size of 64MB
+        modes = ['--spark-only']
+        stripe = 128 # One file should have stripe size of 128MB
         multipliers = [(64, 4)] #Total data size: 32GB
         timestamp = datetime.now().isoformat()
 
@@ -75,10 +75,11 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier)
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp06', result_dirname, str(timestamp)))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp06', result_dirname, str(timestamp)))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp03_4spark', result_dirname, str(timestamp)))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp03_4spark', result_dirname, str(timestamp)))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
+                    configbuilder.set('rados_used', False)
                     config = configbuilder.build()
                     configs.append(config)
 
