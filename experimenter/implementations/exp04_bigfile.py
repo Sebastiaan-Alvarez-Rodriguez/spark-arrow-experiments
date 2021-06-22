@@ -80,6 +80,9 @@ class LocalExperiment(ExperimentInterface):
                     configbuilder.set('remote_data_dir', '~/data') # <---- Write to local NVME
                     configbuilder.set('rados_used', False)
                     configbuilder.set('data_query', '"{}"'.format(data_query))
+                    configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)+[ # <------------ Alt: No pushdown
+                        'spark.arrowspark.pushdown.filters=false'
+                    ])
                     config = configbuilder.build()
                     configs.append(config) 
 
