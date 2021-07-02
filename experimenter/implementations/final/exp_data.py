@@ -69,10 +69,11 @@ class CephExperiment(ExperimentInterface):
 
         configs = []
         for (copy_multiplier, link_multiplier) in multipliers:
-            result_dirname = 'cp{}_ln{}_rs10'.format(copy_multiplier, link_multiplier)
+            result_dirname = 'cp{}_ln{}'.format(copy_multiplier, link_multiplier)
             configbuilder = ExperimentConfigurationBuilder()
+            configbuilder.set('batchsize', 1024)
             configbuilder.set('mode', '--arrow-only')
-            configbuilder.set('runs', 31)
+            configbuilder.set('runs', 21)
             configbuilder.set('spark_driver_memory', '60G')
             configbuilder.set('spark_executor_memory', '60G')
             configbuilder.set('node_config', get_node_configuration())
