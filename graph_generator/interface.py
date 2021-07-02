@@ -12,22 +12,34 @@ class GeneratorInterface(metaclass=abc.ABCMeta):
 
     def filter(self, path):
         '''Determine if given path should be accepted or filtered out.
+        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
         Args:
             path (str): Full path to file to decide for.
 
         Returns:
             `True` to keep file in results, `False` to filter it out.'''
-        raise NotImplementedError
-
+        return path.endswith('.res_a') or path.endswith('.res_s') # Result files with our systems always have these extensions.
 
 
     def to_identifiers(self, path):
         '''Transform given path to a number of identifiers.
+        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
         Args:
             path (str): Full path to file to build identifiers for.
 
         Returns:
             `dict(str, Any)`: Keyword identifiers.'''
+        raise NotImplementedError
+
+
+    def sorting(self, frame):
+        '''Sort result groups for grouped display.
+        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
+        Args:
+            frame (Frame): Frame to sort.
+
+        Returns:
+            `callable` sorting function to use when displaying results in a grouped manner.'''
         raise NotImplementedError
 
 

@@ -5,7 +5,7 @@ from utils.printer import *
 
 from graph_generator.interface import GeneratorInterface
 from graph_generator.internal.util.reader import read
-
+from graph_generator.internal.interpreter import Interpreter
 
 def _import_module(generator_name):
     if (not fs.isfile(loc.graph_generator_dir(), generator_name)) and not generator_name.endswith('.py'):
@@ -39,7 +39,9 @@ def generate(generator_name, paths, dest=None, show=True, large=False, skip_lead
 
     fs.mkdir(fs.dirname(loc.graph_generation_dir()), exist_ok=True)
 
-    frames = read(paths, generator.to_identifiers, filter_func=generator.filter, skip_leading=skip_leading)
+    for path in paths:
+        interpreter = Interpreter(path, generator.filter, generator.to_identifiers, generator.sorting, debug=True)
+        frames = read(path, interpreter, skip_leading=skip_leading)
     outputgraph_path = generator.plot(frames, dest=dest, show=show, large=large)
 
     return True, (outputgraph_path if dest else None)

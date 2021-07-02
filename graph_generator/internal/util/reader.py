@@ -23,22 +23,22 @@ def walk(path):
     return file_paths
 
 
-def read(paths, identifier_func, filter_func=lambda _: True, skip_leading=0):
+def read(paths, interpreter, skip_leading=0):
     '''For every path, searches all contained files (including subdirectories). Filters files. Kept files are read into a `Frame` and sent back as an iterable.
     1. Given a path, needs to find all files in all subdirectories.
     2. Needs to accept a lambda function to turn a path to a dict of identifiers.
     3. Needs to return frames for paths with identifiers.
     It is the responsibility of the generators to provide decent identifier functions.
     It is the responsibility of the generators to decide how stuff should be plotted with those identifiers.
-    Generic lineplotter can either use ALL identifiers, or filter such that only unique ones remain for each category.
     Args:
-        paths (iterable(str)): Paths to search for files.
-        identifier_func (callable(str)): Function transforming inputted path to a number of keyword-argument identifiers.
-        filter_func(optional callable(str)): If set, uses callable to decide which paths to keep. Callable must take 1 str path as argument and produce a bool.
+        paths (str,iterable(str)): Path or paths to search for files.
+        interpreter (Interpreter): Interpreter instance to provide `filter`, `to_identifiers` and `sorting` functionality.
         skip_leading (optional int): If set, skips reading the set number of lines. Supports negative numbers, which mean: Read the last abs(negative_number) values.
 
     Returns:
         `iterable(Frame)`: An iterable of frames containing the data from a file.'''
+    if isinstance(paths, str):
+        paths = [paths]
     with concurrent.futures.ThreadPoolExecutor(max_workers=cpu_count()-1) as executor:
         futures_walk = [executor.submit(walk, path) for path in paths]
         paths = []
@@ -46,14 +46,14 @@ def read(paths, identifier_func, filter_func=lambda _: True, skip_leading=0):
             paths += x.result()
         num_total_files = len(paths)
         print('Found {} files.'.format(num_total_files))
-        futures_filter = [executor.submit(filter_func, x) for x in paths]
+        futures_filter = [executor.submit(interpreter.filter, x) for x in paths]
         accepted_paths = []
         for idx, x in enumerate(futures_filter):
             if x.result():
                 accepted_paths.append(paths[idx])
         del paths
     print('Accepted {}/{} files.'.format(len(accepted_paths), num_total_files))
-    return (Frame.from_file(x, skip_leading=skip_leading, **identifier_func(x)) for x in accepted_paths)
+    return (Frame.from_file(x, sort_func=interpreter.sorting(), skip_leading=skip_leading, **interpreter.to_identifiers(x)) for x in accepted_paths)
 
 
 class Frame(object):
@@ -67,17 +67,18 @@ class Frame(object):
 
     Returns:
     '''
-    def __init__(self, lines, skip_leading=0, **kwargs):
+    def __init__(self, lines, skip_leading=0, sort_func=lambda e: e, **kwargs):
         lines = lines[skip_leading:]
         self.i_arr = np.array([int(x.split(',', 1)[0]) for idx, x in enumerate(lines)])
         self.c_arr = np.array([int(x.split(',', 1)[1]) for idx, x in enumerate(lines)])
+        self.sort_func = sort_func
         self._identifiers = dict(kwargs)
 
     @staticmethod
-    def from_file(path, skip_leading=0, **kwargs):
+    def from_file(path, skip_leading=0, sort_func=lambda e: 0, **kwargs):
         with open(path, 'r') as f:
             lines = f.readlines()
-        return Frame(lines, skip_leading=skip_leading, **kwargs)
+        return Frame(lines, skip_leading=skip_leading, sort_func=sort_func, **kwargs)
 
     @property
     def size(self):
@@ -117,7 +118,6 @@ class Frame(object):
 
     def __str__(self):
         return ', '.join('{}:{}'.format(k, v) for k,v in self.identifiers.items())
-
 
     def __len__(self):
         return self.size

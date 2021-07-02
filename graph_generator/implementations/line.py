@@ -16,9 +16,6 @@ class LinePlot(GeneratorInterface):
     def __init__(self, *args, **kwargs):
         pass
 
-    def filter(self, path):
-        return path.endswith('.res_a') or path.endswith('.res_s')
-
     def to_identifiers(self, path):
         identifiers = dict()
         if path.endswith('.res_a'):

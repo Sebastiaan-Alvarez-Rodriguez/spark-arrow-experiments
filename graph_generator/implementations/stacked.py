@@ -15,12 +15,10 @@ def get_generator(*args, **kwargs):
 
 
 class StackedBarPlot(GeneratorInterface):
-    '''Simple class to make lineplots.'''
+    '''Simple class to make lineplots.
+    Expects that frames contain a `group` identifier. Each group category is plotted as a separate bar.'''
     def __init__(self, *args, **kwargs):
         pass
-
-    def filter(self, path):
-        return path.endswith('.res_a') or path.endswith('.res_s')
 
     def to_identifiers(self, path):
         identifiers = dict()
@@ -35,7 +33,12 @@ class StackedBarPlot(GeneratorInterface):
         rs_found = re.search(r'_rs([0-9]+)', path)
         if rs_found:
             identifiers['selectivity'] = path[rs_found.start()+3:rs_found.end()]+'%'
+            identifiers['group'] = identifiers['selectivity']
         return identifiers
+
+
+    def sorting(self, frame):
+        return (int(e.identifiers['selectivity'][:-1]), e.identifiers['exp'], e.identifiers['producer'])
 
 
     def plot(self, frames, dest=None, show=True, large=False):
@@ -44,11 +47,15 @@ class StackedBarPlot(GeneratorInterface):
         label_arr = []
         ticks_arr = []
         errors_arr = []
-        for frame in sorted(frames, key=lambda e: (int(e.identifiers['selectivity'][:-1]), e.identifiers['exp'], e.identifiers['producer'])):
+        
+        frames = list(frames)
+        sort_func = frames[0].sort_func if any(frames) else lambda e: 0
+        print(f'Frame: {frames[0]}. Sorter: {sort_func(frames[0])}, func {sort_func}')
+        for frame in sorted(frames, key=sort_func):
             plot_i_arr.append(frame.i_avgtime)
             plot_c_arr.append(frame.c_avgtime)
             label_arr.append(str(frame))
-            ticks_arr.append(frame.identifiers['selectivity'])
+            ticks_arr.append(frame.identifiers['group'])
             # Code below for error whiskers (take note of percentile function to filter out outliers)
             normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000
             percentile = np.percentile(normal_frame, 99)
