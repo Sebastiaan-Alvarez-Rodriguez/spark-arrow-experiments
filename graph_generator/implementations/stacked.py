@@ -49,8 +49,7 @@ class StackedBarPlot(GeneratorInterface):
         errors_arr = []
         
         frames = list(frames)
-        sort_func = frames[0].sort_func if any(frames) else lambda e: 0
-        print(f'Frame: {frames[0]}. Sorter: {sort_func(frames[0])}, func {sort_func}')
+        sort_func = frames[0].sort_func if any(frames) else self.sorting
         for frame in sorted(frames, key=sort_func):
             plot_i_arr.append(frame.i_avgtime)
             plot_c_arr.append(frame.c_avgtime)

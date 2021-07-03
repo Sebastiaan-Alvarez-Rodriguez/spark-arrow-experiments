@@ -35,13 +35,13 @@ class LinePlot(GeneratorInterface):
     def plot(self, frames, dest=None, show=True, large=False):
         plot_arr = []
         label_arr=[]
-        for frame in frames:
+
+        frames = list(frames)
+        sort_func = frames[0].sort_func if any(frames) else self.sorting
+        for frame in sorted(frames, key=sort_func):
             plot_arr.append(frame.c_arr / 1000000000)
             label_arr.append(str(frame))
-            # ovars = Dimension.open_vars(num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)[0]
-            # label_arr.append((
-            #     'Arrow-Spark: {}'.format(Dimension.make_id_string(frame_arrow, num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)),
-            #     'Spark: {}'.format(Dimension.make_id_string(frame_spark, num_cols, compute_cols, node, partitions_per_node, extension, compression, amount, kind, rb)),))
+
         if large:
             fontsize = 28
             font = {

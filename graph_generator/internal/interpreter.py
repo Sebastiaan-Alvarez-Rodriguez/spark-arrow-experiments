@@ -92,12 +92,12 @@ class Interpreter(object):
         for near in self.get_nearest_py(path):
             module = self.get_or_insert_module(near)
             try:
-                return module.filter(path)
-            except AttributeError as e:
-                pass # Module did not have a filter function. Let's try the next nearest candidate.
-            else:
-                if self.debug:
-                    print(f'filter serviced by file: {near}')
+                if hasattr(module, 'filter'):
+                    if self.debug:
+                        print(f'filter serviced by file: {near}')
+                    return module.filter(path)
+            except Exception as e:
+                printw(f'Module {near} experienced error: {e}')
         if self.debug:
             print(f'filter serviced by generator fallback.')
         return self.fallback_filter(path) # We have no more candidates. Use the fallback.
@@ -114,12 +114,12 @@ class Interpreter(object):
         for near in self.get_nearest_py(path):
             module = self.get_or_insert_module(near)
             try:
-                return module.to_identifiers(path)
-            except AttributeError as e:
-                pass # Module did not have a to_identifiers function. Let's try the next nearest candidate.
-            else:
-                if self.debug:
-                    print(f'to_identifiers serviced by file: {near}')
+                if hasattr(module, 'to_identifiers'):
+                    if self.debug:
+                        print(f'to_identifiers serviced by file: {near}')
+                    return module.to_identifiers(path)
+            except Exception as e:
+                printw(f'Module {near} experienced error: {e}')
         if self.debug:
             print(f'to_identifiers serviced by generator fallback.')
         return self.fallback_to_identifiers(path) # We have no more candidates. Use the fallback.
@@ -135,13 +135,12 @@ class Interpreter(object):
         for near in self.get_furthest_py(path):
             module = self.get_or_insert_module(near)
             try:
-                return module.sorting
-            except AttributeError as e:
-                print(e)
-                pass # Module did not have a sorting function. Let's try the next nearest candidate.
-            else:
-                if self.debug:
-                    print(f'sorting serviced by file: {near}')
+                if hasattr(module, 'sorting'):
+                    if self.debug:
+                        print(f'sorting serviced by file: {near}')
+                    return module.sorting
+            except Exception as e:
+                printw(f'Module {near} experienced error: {e}')
         if self.debug:
             print(f'sorting serviced by generator fallback.')
         return self.fallback_sorting # We have no more candidates. Use the fallback.
