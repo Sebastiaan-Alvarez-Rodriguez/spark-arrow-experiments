@@ -57,8 +57,9 @@ class StackedBarPlot(GeneratorInterface):
             ticks_arr.append(frame.identifiers['group'])
             # Code below for error whiskers (take note of percentile function to filter out outliers)
             normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000
-            percentile = np.percentile(normal_frame, 99)
-            errors_arr.append(np.std(normal_frame[normal_frame <= percentile]))
+            percentile1 = np.percentile(normal_frame, 1)
+            percentile99 = np.percentile(normal_frame, 99)
+            errors_arr.append(np.std(normal_frame[np.where((percentile1 <= normal_frame) * (normal_frame <= percentile99))]))
 
         if large:
             fontsize = 28
