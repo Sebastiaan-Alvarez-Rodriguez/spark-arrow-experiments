@@ -1,5 +1,13 @@
 __pycache__/
 /application/*
+
 /results/*
+!/results/final/
+
+/results/final/*
+!/results/final/exp_*/
+
+/results/final/exp_*/*
+!/results/final/exp_*/*.py
 
 /experimenter/internal/remoto/modules/generated/
