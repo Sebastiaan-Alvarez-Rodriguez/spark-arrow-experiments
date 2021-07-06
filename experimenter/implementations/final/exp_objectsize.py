@@ -1,3 +1,17 @@
+'''
+TODO:
+Pick standards for:
+    1. row selectivity.
+    2. batch size.
+    3. cluster size, Spark and Ceph.
+    4. dataset size.
+
+Current stuff:
+    1. 10% query
+    2. <need to find out optimum again>
+    3. Regular 8,8
+    4. 512GB
+'''
 from datetime import datetime
 
 from rados_deploy import Designation
@@ -47,30 +61,30 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
-        stripe = 128 # One file should have stripe size of 128MB
-        multipliers = [(64, 2), (64, 4), (64, 8), (64, 16), (64, 32), (64, 64)] #Total data size: 16, 32, 64, 128, 256, 512GB
+
+        object_sizes = [16, 32, 64, 128]
+        copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
         timestamp = datetime.now().isoformat()
 
         configs = []
-        for mode in ['--arrow-only', '--spark-only']:
-            for (copy_multiplier, link_multiplier) in multipliers:
-                result_dirname = 'cp{}_ln{}'.format(copy_multiplier, link_multiplier)
-                configbuilder = ExperimentConfigurationBuilder()
-                configbuilder.set('batchsize', 1024)
-                configbuilder.set('mode', mode)
-                configbuilder.set('runs', 21)
-                configbuilder.set('spark_driver_memory', '60G')
-                configbuilder.set('spark_executor_memory', '60G')
-                configbuilder.set('node_config', get_node_configuration())
-                configbuilder.set('stripe', stripe)
-                configbuilder.set('copy_multiplier', copy_multiplier)
-                configbuilder.set('link_multiplier', link_multiplier)
-                configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_data', str(timestamp), result_dirname))
-                configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_data', str(timestamp), result_dirname))
-                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
-                configbuilder.set('data_query', '"{}"'.format(data_query))
-                config = configbuilder.build()
-                configs.append(config)
+        for stripe in object_sizes:
+            result_dirname = '{}'.format(stripe)
+            configbuilder = ExperimentConfigurationBuilder()
+            configbuilder.set('mode', '--arrow-only')
+            configbuilder.set('runs', 21)
+            configbuilder.set('batchsize', 1024)
+            configbuilder.set('spark_driver_memory', '60G')
+            configbuilder.set('spark_executor_memory', '60G')
+            configbuilder.set('node_config', get_node_configuration())
+            configbuilder.set('stripe', stripe)
+            configbuilder.set('copy_multiplier', copy_multiplier)
+            configbuilder.set('link_multiplier', link_multiplier)
+            configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize', str(timestamp), result_dirname))
+            configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize', str(timestamp), result_dirname))
+            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
+            configbuilder.set('data_query', '"{}"'.format(data_query))
+            config = configbuilder.build()
+            configs.append(config)
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)

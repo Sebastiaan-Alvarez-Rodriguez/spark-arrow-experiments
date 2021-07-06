@@ -63,7 +63,7 @@ class CephExperiment(ExperimentInterface):
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
         batchsizes = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
-        stripe = 128 # One file should have stripe size of 64MB
+        stripe = 128 # One file should have stripe size of 128MB
         copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
         timestamp = datetime.now().isoformat()
 

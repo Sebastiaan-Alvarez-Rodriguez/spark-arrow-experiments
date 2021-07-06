@@ -62,7 +62,7 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
-        stripe = 128 # One file should have stripe size of 64MB
+        stripe = 128 # One file should have stripe size of 128MB
         multipliers = [(64, 2), (64, 4), (64, 8), (64, 16), (64, 32), (64, 64)] #Total data size: 16, 32, 64, 128, 256, 512GB
         timestamp = datetime.now().isoformat()
 

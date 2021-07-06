@@ -56,7 +56,7 @@ class CephExperiment(ExperimentInterface):
             'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
-        stripe = 128 # One file should have stripe size of 64MB
+        stripe = 128 # One file should have stripe size of 128MB
         
         copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
         timestamp = datetime.now().isoformat()

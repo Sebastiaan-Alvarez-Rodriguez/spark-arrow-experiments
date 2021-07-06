@@ -1,3 +1,4 @@
+import os
 import re
 
 import matplotlib.pyplot as plt
@@ -39,7 +40,7 @@ class StackedBarPlot(GeneratorInterface):
         elif path.endswith('.res_s'):
             identifiers['producer'] = 'spark'
 
-        cp, ln = _get_numbers(os.path.basename(os.path.dirname(os.path.dirname(path))))
+        cp, ln = _get_numbers(os.path.basename(os.path.dirname(path)))
         identifiers['size'] = cp * ln
         identifiers['group'] = str(identifiers['size'])
         return identifiers
