@@ -13,7 +13,6 @@ def to_identifiers(path):
 
     Returns:
         `dict(str, Any)`: Keyword identifiers.'''
-
     identifiers = dict()
     if path.endswith('.res_a'):
         identifiers['producer'] = 'arrow'
@@ -23,6 +22,7 @@ def to_identifiers(path):
     cp, ln = _get_numbers(os.path.basename(os.path.dirname(os.path.dirname(path))))
     identifiers['size'] = cp * ln
     identifiers['group'] = str(identifiers['size'])
+    identifiers['group1'] = 'no offload'
     return identifiers
 
 

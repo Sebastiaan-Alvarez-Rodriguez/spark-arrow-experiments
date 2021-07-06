@@ -37,15 +37,15 @@ def start_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_adm
     return True
 
 
-def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, spark_nodes):
+def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_admin_id, spark_nodes):
     config = interface.config
 
     if config.ceph_store_type == rados_deploy.StorageType.MEMSTORE:
         from rados_deploy.stop import memstore as stop_memstore
-        retval = stop_memstore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
+        retval = stop_memstore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
     else:
         from rados_deploy.stop import bluestore as stop_bluestore
-        retval = stop_bluestore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
+        retval = stop_bluestore(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, admin_id=rados_ceph_admin_id, mountpoint_path=config.ceph_mountpoint_dir, silent=config.ceph_silent or config.silent)
     if not retval:
         printe('Could not stop RADOS-Ceph deployment (iteration {}/{})'.format(idx+1, num_experiments))
         return False
@@ -68,7 +68,7 @@ def register_rados_ceph_functions(interface, idx, num_experiments, ceph_nodes=No
 
     interface.register('install_others_funcs', lambda iface: install_rados_ceph(iface, idx, num_experiments, get_ceph_nodes(iface), get_spark_nodes(iface)))
     interface.register('start_others_funcs', lambda iface: start_rados_ceph(iface, idx, num_experiments, get_ceph_nodes(iface), get_rados_ceph_admin_id(iface), get_spark_nodes(iface)))
-    interface.register('stop_others_funcs', lambda iface: stop_rados_ceph(iface, idx, num_experiments, get_ceph_nodes(iface), get_spark_nodes(iface)))
+    interface.register('stop_others_funcs', lambda iface: stop_rados_ceph(iface, idx, num_experiments, get_ceph_nodes(iface), get_rados_ceph_admin_id(iface), get_spark_nodes(iface)))
 
 
 def register_rados_ceph_deploy_data(interface, idx, num_experiments, ceph_nodes=None, rados_ceph_admin_id=None, spark_nodes=None):

@@ -23,6 +23,7 @@ def to_identifiers(path):
     cp, ln = _get_numbers(os.path.basename(os.path.dirname(os.path.dirname(path))))
     identifiers['size'] = cp * ln
     identifiers['group'] = str(identifiers['size'])
+    identifiers['group1'] = 'offload'
     return identifiers
 
 

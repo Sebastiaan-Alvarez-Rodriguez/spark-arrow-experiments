@@ -52,24 +52,25 @@ class CephExperiment(ExperimentInterface):
         timestamp = datetime.now().isoformat()
 
         configs = []
-        for (copy_multiplier, link_multiplier) in multipliers:
-            result_dirname = 'cp{}_ln{}'.format(copy_multiplier, link_multiplier)
-            configbuilder = ExperimentConfigurationBuilder()
-            configbuilder.set('batchsize', 1024)
-            configbuilder.set('mode', '--arrow-only')
-            configbuilder.set('runs', 21)
-            configbuilder.set('spark_driver_memory', '60G')
-            configbuilder.set('spark_executor_memory', '60G')
-            configbuilder.set('node_config', get_node_configuration())
-            configbuilder.set('stripe', stripe)
-            configbuilder.set('copy_multiplier', copy_multiplier)
-            configbuilder.set('link_multiplier', link_multiplier)
-            configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_data', str(timestamp), result_dirname))
-            configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_data', str(timestamp), result_dirname))
-            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
-            configbuilder.set('data_query', '"{}"'.format(data_query))
-            config = configbuilder.build()
-            configs.append(config)
+        for mode in ['--arrow-only', '--spark-only']:
+            for (copy_multiplier, link_multiplier) in multipliers:
+                result_dirname = 'cp{}_ln{}'.format(copy_multiplier, link_multiplier)
+                configbuilder = ExperimentConfigurationBuilder()
+                configbuilder.set('batchsize', 1024)
+                configbuilder.set('mode', mode)
+                configbuilder.set('runs', 21)
+                configbuilder.set('spark_driver_memory', '60G')
+                configbuilder.set('spark_executor_memory', '60G')
+                configbuilder.set('node_config', get_node_configuration())
+                configbuilder.set('stripe', stripe)
+                configbuilder.set('copy_multiplier', copy_multiplier)
+                configbuilder.set('link_multiplier', link_multiplier)
+                configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_data', str(timestamp), result_dirname))
+                configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_data', str(timestamp), result_dirname))
+                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
+                configbuilder.set('data_query', '"{}"'.format(data_query))
+                config = configbuilder.build()
+                configs.append(config)
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
