@@ -62,7 +62,7 @@ class CephExperiment(ExperimentInterface):
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
 
-        object_sizes = [2, 4, 8, 16, 32, 64, 128]
+        object_sizes = [1, 2, 4, 8, 16, 32, 64, 128]
         copy_multiplier, link_multiplier = (32, 64) #Total data size (for 128MB objects): 256GB
         timestamp = datetime.now().isoformat()
 
