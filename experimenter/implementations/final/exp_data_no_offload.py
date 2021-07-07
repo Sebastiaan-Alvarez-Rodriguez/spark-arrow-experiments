@@ -62,8 +62,8 @@ class CephExperiment(ExperimentInterface):
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
-        stripe = 128 # One file should have stripe size of 128MB
-        multipliers = [(64, 2), (64, 4), (64, 8), (64, 16), (64, 32), (64, 64)] #Total data size: 16, 32, 64, 128, 256, 512GB
+        stripe = 16 # One file should have stripe size of this many MB
+        multipliers = [(64, 16), (64, 32), (64, 64), (64, 128), (64, 256), (64, 512)] #Total data size: 16, 32, 64, 128, 256, 512GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -81,7 +81,7 @@ class CephExperiment(ExperimentInterface):
             configbuilder.set('link_multiplier', link_multiplier)
             configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_data_no_offload', str(timestamp), result_dirname))
             configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_data_no_offload', str(timestamp), result_dirname))
-            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
+            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_16mb.pq'))
             configbuilder.set('data_query', '"{}"'.format(data_query))
             configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)+[
                 'spark.arrowspark.pushdown.filters=false'

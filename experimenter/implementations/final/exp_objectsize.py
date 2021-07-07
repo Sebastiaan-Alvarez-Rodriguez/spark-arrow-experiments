@@ -62,8 +62,8 @@ class CephExperiment(ExperimentInterface):
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
 
-        object_sizes = [16, 32, 64, 128]
-        copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
+        object_sizes = [2, 4, 8, 16, 32, 64, 128]
+        copy_multiplier, link_multiplier = (32, 64) #Total data size (for 128MB objects): 256GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -71,14 +71,14 @@ class CephExperiment(ExperimentInterface):
             result_dirname = '{}'.format(stripe)
             configbuilder = ExperimentConfigurationBuilder()
             configbuilder.set('mode', '--arrow-only')
-            configbuilder.set('runs', 21)
+            configbuilder.set('runs', 6)
             configbuilder.set('batchsize', 1024)
             configbuilder.set('spark_driver_memory', '60G')
             configbuilder.set('spark_executor_memory', '60G')
             configbuilder.set('node_config', get_node_configuration())
             configbuilder.set('stripe', stripe)
             configbuilder.set('copy_multiplier', copy_multiplier)
-            configbuilder.set('link_multiplier', link_multiplier)
+            configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
             configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize', str(timestamp), result_dirname))
             configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize', str(timestamp), result_dirname))
             configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))

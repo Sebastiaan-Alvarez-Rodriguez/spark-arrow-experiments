@@ -63,8 +63,8 @@ class CephExperiment(ExperimentInterface):
         data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
         batchsizes = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
-        stripe = 128 # One file should have stripe size of 128MB
-        copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
+        stripe = 16 # One file should have stripe size of this many MB
+        copy_multiplier, link_multiplier = (64, 512) #Total data size: 512GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -82,7 +82,7 @@ class CephExperiment(ExperimentInterface):
             configbuilder.set('link_multiplier', link_multiplier)
             configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_batchsize_no_rados', str(timestamp), result_dirname))
             configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_batchsize_no_rados', str(timestamp), result_dirname))
-            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
+            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_16mb.pq'))
             configbuilder.set('data_query', '"{}"'.format(data_query))
             configbuilder.set('rados_used', False)
             config = configbuilder.build()
