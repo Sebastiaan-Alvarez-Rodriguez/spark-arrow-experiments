@@ -43,7 +43,7 @@ def generate(generator_name, paths, dest=None, show=True, large=False, skip_lead
 
     frames = []
     for path in paths:
-        interpreter = Interpreter(path, generator.filter, generator.to_identifiers, generator.sorting, debug=False)
+        interpreter = Interpreter(path, generator.filter, generator.to_identifiers, generator.sorting, debug=True)
         frames.append(read(path, interpreter, skip_leading=skip_leading))
     outputgraph_path = generator.plot(itertools.chain(*frames), dest=dest, show=show, large=large)
 

@@ -18,8 +18,10 @@ def walk(path):
     file_paths = []
     while any(paths):
         cur = paths.pop() # pop takes last element from list.
+        print(cur)
         paths += list(fs.ls(cur, full_paths=True, only_dirs=True)) # Appends paths to end of list.
         file_paths += list(x for x in fs.ls(cur, full_paths=True, only_files=True) if x.endswith('.py'))
+        print(file_paths)
     return file_paths
 
 
@@ -31,9 +33,10 @@ class Interpreter(object):
     Implementation is thread-safe, meaning: 
         Even when multiple threads are calling functions in parallel, no module is loaded twice, no undedfined states of this object can occur.'''
     def __init__(self, path, fallback_filter, fallback_to_identifiers, fallback_sorting, debug=False):
-        self.root_path = path
-        self.interpret_targets = sorted([Path(x) for x in walk(path)], key=lambda e: (len(e.parts), e.parent))
+        self.root_path = path #TODO: Should start finding interpret targets from folder named exp_.* if in path.
+        self.interpret_targets = sorted([Path(x) for x in walk(self.root_path)], key=lambda e: (len(e.parts), e.parent))
 
+        print(f'path: {self.root_path}. found: {self.interpret_targets}')
         self.fallback_filter = fallback_filter
         self.fallback_to_identifiers = fallback_to_identifiers
         self.fallback_sorting = fallback_sorting
