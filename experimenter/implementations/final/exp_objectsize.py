@@ -60,7 +60,7 @@ class CephExperiment(ExperimentInterface):
         ''''Get experiment ExecutionInterfaces.
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
-        data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
+        data_query = 'SELECT * FROM table WHERE total_amount > 6', #90% row selectivity, 100% column selectivity
 
         object_sizes = [4, 8, 16, 32, 64, 128]
         copy_multiplier, link_multiplier = (32, 64) #Total data size (for 128MB objects): 256GB
@@ -79,8 +79,8 @@ class CephExperiment(ExperimentInterface):
             configbuilder.set('stripe', stripe)
             configbuilder.set('copy_multiplier', copy_multiplier)
             configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
-            configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize', str(timestamp), result_dirname))
-            configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize', str(timestamp), result_dirname))
+            configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize_90', str(timestamp), result_dirname))
+            configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize_90', str(timestamp), result_dirname))
             configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
             configbuilder.set('data_query', '"{}"'.format(data_query))
             config = configbuilder.build()
