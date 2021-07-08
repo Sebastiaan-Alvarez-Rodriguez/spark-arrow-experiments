@@ -78,25 +78,25 @@ class CephExperiment(ExperimentInterface):
 
         configs = []
         for mode in ['--arrow-only', '--spark-only']:
-        for selectivity, data_query in zip(row_selectivities, data_queries):
-            for stripe in object_sizes:
-                result_dirname = '{:03d}_{:03d}'.format(stripe, selectivity)
-                configbuilder = ExperimentConfigurationBuilder()
-                configbuilder.set('mode', mode)
-                configbuilder.set('runs', 6)
-                configbuilder.set('batchsize', 1024)
-                configbuilder.set('spark_driver_memory', '60G')
-                configbuilder.set('spark_executor_memory', '60G')
-                configbuilder.set('node_config', get_node_configuration())
-                configbuilder.set('stripe', stripe)
-                configbuilder.set('copy_multiplier', copy_multiplier)
-                configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
-                configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize_90', str(timestamp), result_dirname))
-                configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize_90', str(timestamp), result_dirname))
-                configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
-                configbuilder.set('data_query', '"{}"'.format(data_query))
-                config = configbuilder.build()
-                configs.append(config)
+            for selectivity, data_query in zip(row_selectivities, data_queries):
+                for stripe in object_sizes:
+                    result_dirname = '{:03d}_{:03d}'.format(stripe, selectivity)
+                    configbuilder = ExperimentConfigurationBuilder()
+                    configbuilder.set('mode', mode)
+                    configbuilder.set('runs', 6)
+                    configbuilder.set('batchsize', 1024)
+                    configbuilder.set('spark_driver_memory', '60G')
+                    configbuilder.set('spark_executor_memory', '60G')
+                    configbuilder.set('node_config', get_node_configuration())
+                    configbuilder.set('stripe', stripe)
+                    configbuilder.set('copy_multiplier', copy_multiplier)
+                    configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize_90', str(timestamp), result_dirname))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize_90', str(timestamp), result_dirname))
+                    configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
+                    configbuilder.set('data_query', '"{}"'.format(data_query))
+                    config = configbuilder.build()
+                    configs.append(config)
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
