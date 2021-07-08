@@ -1,17 +1,3 @@
-'''
-TODO:
-Pick standards for:
-    1. row selectivity.
-    2. batch size.
-    3. cluster size, Spark and Ceph.
-    4. dataset size.
-
-Current stuff:
-    1. 10% query
-    2. <need to find out optimum again>
-    3. Regular 8,8
-    4. 512GB
-'''
 from datetime import datetime
 
 from rados_deploy import Designation
@@ -64,7 +50,7 @@ class CephExperiment(ExperimentInterface):
         batchsizes = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
         stripe = 16 # One file should have stripe size of this many MB
-        copy_multiplier, link_multiplier = (64, 512) #Total data size: 512GB
+        copy_multiplier, link_multiplier = (64, 64) #Total data size: 512GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -72,7 +58,7 @@ class CephExperiment(ExperimentInterface):
             result_dirname = '{}'.format(batchsize)
             configbuilder = ExperimentConfigurationBuilder()
             configbuilder.set('mode', '--arrow-only')
-            configbuilder.set('runs', 3)
+            configbuilder.set('runs', 21)
             configbuilder.set('batchsize', batchsize)
             configbuilder.set('spark_driver_memory', '60G')
             configbuilder.set('spark_executor_memory', '60G')
@@ -82,7 +68,7 @@ class CephExperiment(ExperimentInterface):
             configbuilder.set('link_multiplier', link_multiplier)
             configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_batchsize_no_rados', str(timestamp), result_dirname))
             configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_batchsize_no_rados', str(timestamp), result_dirname))
-            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_16mb.pq'))
+            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
             configbuilder.set('data_query', '"{}"'.format(data_query))
             configbuilder.set('rados_used', False)
             config = configbuilder.build()
