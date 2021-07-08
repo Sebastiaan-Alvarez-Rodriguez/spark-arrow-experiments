@@ -77,7 +77,7 @@ class CephExperiment(ExperimentInterface):
         timestamp = datetime.now().isoformat()
 
         configs = []
-        for mode in ['--arrow-only', '--spark-only']
+        for mode in ['--arrow-only', '--spark-only']:
         for selectivity, data_query in zip(row_selectivities, data_queries):
             for stripe in object_sizes:
                 result_dirname = '{:03d}_{:03d}'.format(stripe, selectivity)
