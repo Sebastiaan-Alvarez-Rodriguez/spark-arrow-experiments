@@ -54,6 +54,7 @@ class StackedBarPlot(GeneratorInterface):
             plot_i_arr.append(frame.i_avgtime)
             plot_c_arr.append(frame.c_avgtime)
             label_arr.append(str(frame))
+            print(f'TMP: {frame.identifiers}')
             ticks_arr.append(frame.identifiers['group'])
             # Code below for error whiskers (take note of percentile function to filter out outliers)
             normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000

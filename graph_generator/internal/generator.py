@@ -17,11 +17,12 @@ def _import_module(generator_name):
     return importer.import_full_path(fs.join(loc.graph_generator_dir(), generator_name))
 
 
-def generate(generator_name, paths, dest=None, show=True, large=False, skip_leading=0, args=None, kwargs=None):
+def generate(generator_name, paths, interpret_path=None, dest=None, show=True, large=False, skip_leading=0, args=None, kwargs=None):
     '''Generates requested `data_format`, using requested `generator_name`.
     Args:
         generator_name (str): Name of generator. Must be present in `data_generator/implementations/`. A `.py` extension does not have to be specified.
         paths (iterable(str)): Paths to directories to read files from.
+        interpret_path (optional str): If set, uses given file as interpret file. This file is always considered last.
         dest (optional str): If set, stores generated graph to given output path.
         show (optional bool): If set, shows graph. Otherwise, does not show anything.
         large (optional bool): If set, generates graph with larger font.
@@ -43,7 +44,7 @@ def generate(generator_name, paths, dest=None, show=True, large=False, skip_lead
 
     frames = []
     for path in paths:
-        interpreter = Interpreter(path, generator.filter, generator.to_identifiers, generator.sorting, debug=True)
+        interpreter = Interpreter(path, generator.filter, generator.to_identifiers, generator.sorting, interpret_path=interpret_path, debug=True)
         frames.append(read(path, interpreter, skip_leading=skip_leading))
     outputgraph_path = generator.plot(itertools.chain(*frames), dest=dest, show=show, large=large)
 

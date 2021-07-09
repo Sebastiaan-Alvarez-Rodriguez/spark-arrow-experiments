@@ -18,10 +18,8 @@ def walk(path):
     file_paths = []
     while any(paths):
         cur = paths.pop() # pop takes last element from list.
-        print(cur)
         paths += list(fs.ls(cur, full_paths=True, only_dirs=True)) # Appends paths to end of list.
         file_paths += list(x for x in fs.ls(cur, full_paths=True, only_files=True) if x.endswith('.py'))
-        print(file_paths)
     return file_paths
 
 
@@ -30,13 +28,25 @@ class Interpreter(object):
     Picks, loads, and applies functions from interpreters with greater shared path first.
     All `.py` files in any subdirectory of the given path are considered interpreters for that filetree.
     If multiple `.py` files exist in one subdirectory, visits in order of alphabet.
-    Implementation is thread-safe, meaning: 
-        Even when multiple threads are calling functions in parallel, no module is loaded twice, no undedfined states of this object can occur.'''
-    def __init__(self, path, fallback_filter, fallback_to_identifiers, fallback_sorting, debug=False):
-        self.root_path = path #TODO: Should start finding interpret targets from folder named exp_.* if in path.
-        self.interpret_targets = sorted([Path(x) for x in walk(self.root_path)], key=lambda e: (len(e.parts), e.parent))
+    Note: Implementation is thread-safe. Even when multiple threads are calling functions in parallel, no module is loaded twice, no undedfined states of this object can occur.'''
 
-        print(f'path: {self.root_path}. found: {self.interpret_targets}')
+    def __init__(self, path, fallback_filter, fallback_to_identifiers, fallback_sorting, interpret_path=None, debug=False):
+        '''Constructs a new Interpreter.
+        Note: fallback_* parameters are only used when no interpret file could be found in any subdir from `path` to the filepath of a result file.
+        Args:
+            path (str): Path to search for interpret files.
+            fallback_filter (callable): Callable with signature: bool func(str). Takes a str path, returns `True` if the path is to be filtered-in, `False` otherwise.
+            fallback_to_identifiers (callable): Callable with signature: dict func(str). Takes a str path, returns a dict of string keys, Any vals that will be the identifiers for the file.
+            fallback_sorting (callable): Callable with signature: Any func(optional str). Takes a str path, returns the Frame sorting to apply (e.g. lambda e: len(e) to sort on Frame length).
+                                         rames contain the aforementioned identifiers, which could be used for sorting.
+            interpret_path (optional str): If set, uses given file as interpret file. This file is always considered last.
+            debug (optional bool): If set, prints more about.'''
+        self.root_path = path #TODO: Should start finding interpret targets from folder named exp_.* if in path.
+        
+        self.interpret_targets = []#sorted([Path(x) for x in walk(self.root_path)], key=lambda e: (len(e.parts), e.parent))
+        self.interpret_path = Path(interpret_path) if interpret_path != None else None
+
+
         self.fallback_filter = fallback_filter
         self.fallback_to_identifiers = fallback_to_identifiers
         self.fallback_sorting = fallback_sorting
@@ -74,13 +84,19 @@ class Interpreter(object):
         Returns:
             `Path` to nearest matching interpret file on success, `None` otherwise.'''
         p = Path(path) if isinstance(path, str) else path
-        return [x for x in self.interpret_targets if x.parent in p.parents]
+        val = [x for x in self.interpret_targets if x.parent in p.parents]
+        if self.interpret_path:
+            val.append(self.interpret_path)
+        return val
 
 
     def get_furthest_py(self, path):
         '''Much like `get_nearest_py(self, path)`, only fetches first matching path closest to root.'''
         p = Path(path) if isinstance(path, str) else path
-        return [x for x in self.interpret_targets[::-1] if p in x.parents]
+        val = [x for x in self.interpret_targets[::-1] if p in x.parents]
+        if self.interpret_path:
+            val.append(self.interpret_path)
+        return val
 
 
 
@@ -142,6 +158,8 @@ class Interpreter(object):
                     if self.debug:
                         print(f'sorting serviced by file: {near}')
                     return module.sorting
+                else:
+                    printw(f'No filter module found for file: {near}')
             except Exception as e:
                 printw(f'Module {near} experienced error: {e}')
         if self.debug:

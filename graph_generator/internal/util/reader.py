@@ -117,6 +117,13 @@ class Frame(object):
         return self.i_avgtime+self.c_avgtime    
 
     def __str__(self):
+        if 'label' in self.identifiers:
+            return self.identifiers['label']
+        local_identifiers = dict(self.identifiers)
+        del local_identifiers['group']
+        return ', '.join('{}:{}'.format(k, v) for k,v in self.identifiers.items())
+
+    def __repr__(self):
         return ', '.join('{}:{}'.format(k, v) for k,v in self.identifiers.items())
 
     def __len__(self):
