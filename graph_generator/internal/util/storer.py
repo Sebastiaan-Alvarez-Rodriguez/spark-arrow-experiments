@@ -16,7 +16,7 @@ def filetype_is_supported(extension):
 
 def store_simple(path, plotlike, **kwargs):
     fs.mkdir(loc.graph_generation_dir(), exist_ok=True)
-    plotlike.savefig(fs.join(loc.graph_generation_dir(), path, **kwargs))
+    plotlike.savefig(fs.join(loc.graph_generation_dir(), path), **kwargs)
 
 def store(dirname, filename, filetype, plotlike, **kwargs):
     # Stores given <plotlike> in dir <dirname>/<filename>.<filetype>, passing kwargs to <plotlike>.savefig()

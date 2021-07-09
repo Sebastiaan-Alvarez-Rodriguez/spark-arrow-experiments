@@ -27,7 +27,7 @@ def to_identifiers(path):
 
     objectsize, selectivity = _get_numbers(os.path.basename(os.path.dirname(path)))
 
-    identifiers['group'] = str(selectivity)
+    identifiers['group'] = selectivity
     identifiers['group1'] = str(objectsize)
     
     identifiers['selectivity'] = selectivity
@@ -41,5 +41,5 @@ def sorting(frame):
         frame (Frame): Frame to sort.
 
     Returns:
-        `callable` sorting function to use when displaying results in a grouped manner.'''
+        `callable` sorting function to use when displaying results in a grouped manner.'''     
     return (frame.identifiers['selectivity'], frame.identifiers['objectsize'])

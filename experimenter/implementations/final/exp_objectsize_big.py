@@ -57,9 +57,9 @@ class CephExperiment(ExperimentInterface):
         ]
         row_selectivities = [1, 10, 25, 50, 75, 90, 100]
  
-        object_sizes = [4, 8, 16, 32, 64, 128]
+        object_sizes = [64, 128]
         
-        copy_multiplier, link_multiplier = (32, 16) #Total data size (for 128MB objects): 64GB
+        copy_multiplier, link_multiplier = (32, 128) #Total data size (for 128MB objects): 512GB
         timestamp = datetime.now().isoformat()
 
         configs = []
@@ -77,8 +77,8 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('stripe', stripe)
                     configbuilder.set('copy_multiplier', copy_multiplier)
                     configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
-                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize', str(timestamp), result_dirname))
-                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize', str(timestamp), result_dirname))
+                    configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_objectsize_big', str(timestamp), result_dirname))
+                    configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize_big', str(timestamp), result_dirname))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
                     config = configbuilder.build()

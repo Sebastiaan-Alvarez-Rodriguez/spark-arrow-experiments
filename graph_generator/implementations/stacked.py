@@ -6,6 +6,7 @@ import numpy as np
 from graph_generator.interface import GeneratorInterface
 import graph_generator.internal.util.storer as storer
 from sklearn.metrics import r2_score
+import scipy
 
 # https://matplotlib.org/3.1.1/gallery/lines_bars_and_markers/bar_stacked.html
 
@@ -54,7 +55,6 @@ class StackedBarPlot(GeneratorInterface):
             plot_i_arr.append(frame.i_avgtime)
             plot_c_arr.append(frame.c_avgtime)
             label_arr.append(str(frame))
-            print(f'TMP: {frame.identifiers}')
             ticks_arr.append(frame.identifiers['group'])
             # Code below for error whiskers (take note of percentile function to filter out outliers)
             normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000
@@ -77,9 +77,12 @@ class StackedBarPlot(GeneratorInterface):
         ax.bar(ind, plot_i_arr, width, label='InitTime')
         ax.bar(ind, plot_c_arr, width, yerr=errors_arr, bottom=plot_i_arr, label='ComputeTime', align='center', alpha=0.5, ecolor='black', capsize=10)
         # Code below for normalization prediction.
-        z = np.polyfit(ind, np.add(plot_i_arr,plot_c_arr), 1)
-        y_hat = np.poly1d(z)(ind)
-        ax.plot(ind, y_hat, '--', label='trend ($r^2$ = {:.3f})'.format(r2_score(np.add(plot_i_arr,plot_c_arr), y_hat)))
+        func = lambda x, a, b, c, d: a*x**3 + b*x**2 + c*x + d
+        popt, pcov = scipy.optimize.curve_fit(func, ind, np.add(plot_i_arr,plot_c_arr))
+        # z = np.polyfit(ind, np.add(plot_i_arr,plot_c_arr), 1)
+        # y_hat = np.poly1d(z)(ind)
+        found_curve = func(ind, *popt)
+        plt.plot(ind, found_curve, linestyle='--', marker='o', label='trend ($r^2$ = {:.3f})'.format(r2_score(np.add(plot_i_arr,plot_c_arr), found_curve)))
 
         ax.set(xlabel='Execution number', ylabel='Time (s)', title='Computation times')
         plt.xticks(ind, ticks_arr)
