@@ -81,6 +81,10 @@ class CephExperiment(ExperimentInterface):
                     configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_objectsize', str(timestamp), result_dirname))
                     configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_{}mb.pq'.format(stripe)))
                     configbuilder.set('data_query', '"{}"'.format(data_query))
+                    configbuilder.set('spark_conf_options', lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)+[
+                        'spark.arrowspark.pushdown.filters=True',
+                        'spark.arrowspark.ceph.userados=True',
+                    ])
                     config = configbuilder.build()
                     configs.append(config)
 
