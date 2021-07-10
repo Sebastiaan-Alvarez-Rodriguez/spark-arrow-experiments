@@ -10,4 +10,8 @@ __pycache__/
 /results/final/exp_*/*
 !/results/final/exp_*/*.py
 
+/results/final/measure_*/*
+!/results/final/measure_*/
+!/results/final/measure_*/*.py
+
 /experimenter/internal/remoto/modules/generated/
