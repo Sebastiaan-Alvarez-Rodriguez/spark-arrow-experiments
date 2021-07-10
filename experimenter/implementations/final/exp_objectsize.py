@@ -59,7 +59,7 @@ class CephExperiment(ExperimentInterface):
  
         object_sizes = [4, 8, 16, 32, 64, 128]
         
-        copy_multiplier, link_multiplier = (32, 16) #Total data size (for 128MB objects): 64GB
+        copy_multiplier, link_multiplier = (32, 32) #Total data size (for 128MB objects): 128GB
         timestamp = datetime.now().isoformat()
 
         configs = []
