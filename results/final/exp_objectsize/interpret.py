@@ -9,7 +9,7 @@ def _get_numbers(string):
 
 
 def filter(path):
-    return path.endswith('.res_a')
+    return path.endswith('.res_s')
 
 def to_identifiers(path):
     '''Transform given path to a number of identifiers.

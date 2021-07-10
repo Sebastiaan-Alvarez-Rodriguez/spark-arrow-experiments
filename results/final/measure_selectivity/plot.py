@@ -1,3 +1,4 @@
+from matplotlib import cm
 import matplotlib.pyplot as plt
 import matplotlib.dates as pltdates
 import numpy as np
@@ -6,7 +7,7 @@ import re
 
 large = True
 show = True
-dest = 'tmp.pdf'
+dest = None
 
 
 def col_to_name(name):
@@ -14,18 +15,44 @@ def col_to_name(name):
     return match.group(1)
 
 def _read(csv_path):
-    return pandas.read_csv(csv_path, parse_dates=['Time'])
-    
+    return pandas.read_csv(csv_path, parse_dates=['Time']).fillna(0)
+
+def time_seconds(df):
+    return (df['Time'].iloc[-1] - df['Time'].iloc[0]).total_seconds()
+
+def area_under_curve(df):
+    from scipy.integrate import simps
+    # df.sum(axis=1, numeric_only=True)
+    # df['sumcolumn'] = sum(df[name] for name in df.columns if name != 'Time').fillna(0)
+    # print(df['sumcolumn'])
+    area = simps(df.sum(axis=1, numeric_only=True)/1000/1000/1000, dx=15)
+    print(f'Area={area}')
+    print(f'Seconds={time_seconds(df)}')
 
 def diskio():
     df = _read('1/storage_diskio_selectivity1_512gb.csv')
-    title = 'Disk I/O for 1% row selectivity'
+    title = 'Storage Disk I/O for 1% row selectivity'
     xlabel = 'Time (HH:MM)'
-    ylabel = 'Disk usage (GiB/s)' 
+    ylabel = 'Disk usage (MiB/s)' 
     x = df['Time']
-    ys = [df[colname]/1000/1000/1000 for colname in df.columns if colname != 'Time'] 
+    ys = [df[colname]/1000/1000 for colname in df.columns if colname != 'Time'] 
     labels = [col_to_name(colname) for colname in df.columns if colname != 'Time']
-    return df, title, xlabel, ylabel, x, ys, labels
+    colormap = cm.get_cmap('viridis')
+    colors = [colormap(i) for i in np.linspace(0.0, 0.75, num=len(df.columns)-1)]
+    return df, title, xlabel, ylabel, x, ys, labels, colors
+
+
+def netio():
+    df = _read('1/client_network_selectivity1_512gb.csv')
+    title = 'Client Network I/O for 1% row selectivity'
+    xlabel = 'Time (HH:MM)'
+    ylabel = 'Network usage (MiB/s)' 
+    x = df['Time']
+    ys = [df[colname]/1000/1000 for colname in df.columns if colname != 'Time'] 
+    labels = [col_to_name(colname) for colname in df.columns if colname != 'Time']
+    colormap = cm.get_cmap('viridis')
+    colors = [colormap(i) for i in np.linspace(0.0, 0.75, num=len(df.columns)-1)]
+    return df, title, xlabel, ylabel, x, ys, labels, colors
 
 
 if large:
@@ -39,15 +66,15 @@ if large:
 fig, ax = plt.subplots()
 
 
-df, title, xlabel, ylabel, x, ys, labels = diskio()
-
+df, title, xlabel, ylabel, x, ys, labels, colors = diskio()
+area_under_curve(df)
 
 
 # for colname in df.columns:
 #     if colname != 'Time':
 #         ax.plot(df[colname]/1000/1000, label=colname)
 
-ax.stackplot(x, ys, labels=labels)
+ax.stackplot(x, ys, labels=labels, colors=colors)
 
 fmt = pltdates.DateFormatter('%H:%M')
 ax.xaxis.set_major_formatter(fmt)
