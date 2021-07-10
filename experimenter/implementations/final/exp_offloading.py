@@ -57,7 +57,7 @@ class CephExperiment(ExperimentInterface):
         for offload in [True, False]:
                 result_dirname = '{:03d}'.format(stripe)
                 configbuilder = ExperimentConfigurationBuilder()
-                configbuilder.set('mode', mode)
+                configbuilder.set('mode', '--arrow-only')
                 configbuilder.set('runs', 21)
                 configbuilder.set('batchsize', 1024)
                 configbuilder.set('spark_driver_memory', '60G')
