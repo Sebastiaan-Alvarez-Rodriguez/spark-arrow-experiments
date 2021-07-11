@@ -7,7 +7,7 @@ import re
 
 large = True
 show = True
-dest = None
+dest = None #'net_selectivity_1_512gb_no_offload.pdf'
 
 
 def col_to_name(name):
@@ -25,7 +25,7 @@ def area_under_curve(df):
     # df.sum(axis=1, numeric_only=True)
     # df['sumcolumn'] = sum(df[name] for name in df.columns if name != 'Time').fillna(0)
     # print(df['sumcolumn'])
-    area = simps(df.sum(axis=1, numeric_only=True), dx=15)
+    area = simps(df.sum(axis=1, numeric_only=True)/1024/1024, dx=15)
     print(f'Area={area}')
     print(f'Seconds={time_seconds(df)}')
 
@@ -59,7 +59,7 @@ def netio():
 
 def netio100():
     df = _read('100/client_network_selectivity100_512gb.csv')
-    title = 'Client Network I/O for 1% row selectivity'
+    title = 'Client Network I/O for 1% row selectivity, no offloading'
     xlabel = 'Time (HH:MM)'
     ylabel = 'Network usage (MiB/s)' 
     x = df['Time']
@@ -107,7 +107,7 @@ if large:
 fig, ax = plt.subplots()
 
 
-df, title, xlabel, ylabel, x, ys, labels, colors = cpu_storage()
+df, title, xlabel, ylabel, x, ys, labels, colors = diskio()
 area_under_curve(df)
 
 
