@@ -33,7 +33,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MDS]]))
 
 
-# Performs experiment: Pushdown benefit, compares 10% row selectivity pushdown to no pushdown.
+# Performs experiment: Pushdown benefit, compares row selectivity pushdowns vs no pushdowns.
 class CephExperiment(ExperimentInterface):
     '''This interface provides hooks, which get triggered on specific moments in deployment execution.
     It is your job to implement the functions here.'''
@@ -46,7 +46,16 @@ class CephExperiment(ExperimentInterface):
         ''''Get experiment ExecutionInterfaces.
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
-        data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
+        data_queries = [
+            'SELECT * FROM table WHERE total_amount > 69', #1% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 27', #10% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 17', #25% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 11', #50% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 8', #75% row selectivity, 100% column selectivity
+            'SELECT * FROM table WHERE total_amount > 6', #90% row selectivity, 100% column selectivity
+            'SELECT * FROM table', # 100% row selectivity, 100% column selectivity
+        ]
+        row_selectivities = [1, 10, 25, 50, 75, 90, 100]
 
         stripe = 128
 
@@ -54,8 +63,9 @@ class CephExperiment(ExperimentInterface):
         timestamp = datetime.now().isoformat()
 
         configs = []
-        for offload in [True, False]:
-                result_dirname = '{:03d}'.format(stripe)
+        for data_query, row_selectivity in zip(data_queries, row_selectivities):
+            for offload in [True, False]:
+                result_dirname = '{:03d}_{}'.format(row_selectivity, offload)
                 configbuilder = ExperimentConfigurationBuilder()
                 configbuilder.set('mode', '--arrow-only')
                 configbuilder.set('runs', 21)
@@ -65,7 +75,7 @@ class CephExperiment(ExperimentInterface):
                 configbuilder.set('node_config', get_node_configuration())
                 configbuilder.set('stripe', stripe)
                 configbuilder.set('copy_multiplier', copy_multiplier)
-                configbuilder.set('link_multiplier', link_multiplier*(128//stripe))
+                configbuilder.set('link_multiplier', link_multiplier)
                 configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_offload', str(timestamp), result_dirname))
                 configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_offload', str(timestamp), result_dirname))
                 configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_128mb.pq'))
