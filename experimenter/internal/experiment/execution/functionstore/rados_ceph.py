@@ -92,7 +92,7 @@ def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_admi
         num_experiments (int): Amount of experiments.
         ceph_nodes (list(metareserve.Nodes)): Nodes to stop ceph for.
         rados_ceph_admin_id (int): Node id of the node functioning as Ceph admin.
-        spark_nodes (list(metareserve.Nodes)): Spark nodes (used only to stop CephFS for).
+        spark_nodes (list(metareserve.Nodes)): Spark nodes (used only to stop CephFS).
 
     Required config args:
         key_path (str or None): Path to ssh key to use when connecting to cluster nodes.
@@ -118,6 +118,27 @@ def stop_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_admi
 
 
 def deploy_data_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ceph_admin_id, spark_nodes):
+    '''Deploy data on a Rados-Ceph cluster.
+    Args:
+        interface (ExecutionInterface): Interface this function is registered for. Used to get the config.
+        idx (int): Experiment index.
+        num_experiments (int): Amount of experiments.
+        ceph_nodes (list(metareserve.Nodes)): Nodes to stop ceph for.
+        rados_ceph_admin_id (int): Node id of the node functioning as Ceph admin.
+        spark_nodes (list(metareserve.Nodes)): Spark nodes.
+
+    Required config args:
+        key_path (str or None): Path to ssh key to use when connecting to cluster nodes.
+        data_path (str): Path to data to transmit.
+        remote_data_dir (str): Data destination directory on remote.
+        copy_multiplier (int): Amount of copies of each file to make on the remote.
+        link_multiplier (int): Amount of hardlinks of each file to make on the remote.
+        stripe (int): Object size to use.
+        ceph_silent (bool): Indication whether Ceph output must be suppressed.
+        silent (bool): Indication whether general output must be suppressed.
+
+    Returns:
+        `True` on success, `False` on failure.'''
     config = interface.config
     kwargs = {'admin_id': rados_ceph_admin_id, 'stripe': config.stripe}
     if not data_deploy.deploy(metareserve.Reservation(ceph_nodes+spark_nodes), key_path=config.key_path, paths=[config.data_path], dest=config.remote_data_dir, copy_multiplier=config.copy_multiplier, link_multiplier=config.link_multiplier, silent=config.ceph_silent or config.silent, plugin='rados_deploy', **kwargs):
@@ -127,6 +148,7 @@ def deploy_data_rados_ceph(interface, idx, num_experiments, ceph_nodes, rados_ce
 
 
 def register_rados_ceph_functions(interface, idx, num_experiments, ceph_nodes=None, rados_ceph_admin_id=None, spark_nodes=None):
+    '''Registers install, start and stop functions for Rados-Ceph.'''
     get_ceph_nodes = lambda iface: ceph_nodes if ceph_nodes else iface.distribution['rados_ceph']
     get_rados_ceph_admin_id = lambda iface: rados_ceph_admin_id if rados_ceph_admin_id != None else iface.rados_ceph_admin_id
     get_spark_nodes = lambda iface: spark_nodes if spark_nodes else iface.distribution['spark']
@@ -137,6 +159,7 @@ def register_rados_ceph_functions(interface, idx, num_experiments, ceph_nodes=No
 
 
 def register_rados_ceph_deploy_data(interface, idx, num_experiments, ceph_nodes=None, rados_ceph_admin_id=None, spark_nodes=None):
+    '''Registers data deploy functions for Rados-Ceph.'''
     get_ceph_nodes = lambda iface: ceph_nodes if ceph_nodes else iface.distribution['rados_ceph']
     get_rados_ceph_admin_id = lambda iface: rados_ceph_admin_id if rados_ceph_admin_id != None else iface.rados_ceph_admin_id
     get_spark_nodes = lambda iface: spark_nodes if spark_nodes else iface.distribution['spark']

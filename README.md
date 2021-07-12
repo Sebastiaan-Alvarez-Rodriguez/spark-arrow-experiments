@@ -62,7 +62,7 @@ By default, generated data is outputted to `/data_generator/generated/`.
 We wrote one plugin, which generates a simple parquet file.
 
 Instead of generating data for the experiments, there are also a few pre-generated files [here](https://github.com/JayjeetAtGithub/datasets).
-To get git lfs objects, use:
+To get git lfs objects from this repo, use:
 ```bash
 apt update
 apt install git-lfs
@@ -71,6 +71,7 @@ cd datasets/
 git lfs pull
 ```
 
+For more information, see [`/data_generator/README.md`](/data_generator/README.md).
 
 
 ## Graph Generation
