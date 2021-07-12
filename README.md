@@ -40,12 +40,15 @@ We formalized this concept inside this framework.
 Experiments define how they give shape to this cycle by registering functions with the execution framework.
 The execution framework triggers these functions at the correct time in the cycle.
 
-We provided many default function implementations, to be able to perform automated experiments on our own.
+We provided many default function implementations, to be able to perform automated experiments.
 
-To use our experimentation framework, provided in the [`expermenter`](/experimenter/) directory, use:
+To use the experimentation framework, provided in the [`expermenter`](/experimenter/) directory, use:
 ```bash
 python3 experimenter/entrypoint.py -h
 ```
+
+
+For more information, see [`/experimenter/README.md`](/experimenter/README.md).
 
 
 
@@ -79,4 +82,6 @@ To use the graph generator, use:
 ```bash
 python3 graph_generator/entrypoint.py -h
 ```
-By default, generated graphs are outputted to `/data_generator/generated/`.
+By default, generated graphs are outputted to `/graph_generator/generated/`.
+
+For more information, see [`/graph_generator/README.md`](/graph_generator/README.md).

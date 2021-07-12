@@ -78,8 +78,6 @@ class ExperimentConfiguration(object):
         self.link_multiplier = 20 # inflates dataset by this factor using hardlinks. We first apply the copy multiplier. Effects stack. For sending 1 file with a copy_multiplier=2 and link_multiplier=16, we end up with 2 files, with 15 hardlinks for each file.
         self.data_format = 'parquet'
         self.num_columns = 4
-        self.data_gen_extra_args = None
-        self.data_gen_extra_kwargs = None
         self.data_query = ''
 
         # Application deployment params
@@ -89,7 +87,7 @@ class ExperimentConfiguration(object):
         self.remote_result_file = lambda conf: '{}_{}_{:04}_{:06}.res_{}'.format(_to_val(conf.data_format, conf), _to_val(conf.data_generator_name, conf), _to_val(conf.stripe, conf), _to_val(conf.link_multiplier, conf), 'a' if 'arrow' in _to_val(conf.mode, conf) else 's')
 
         self.batchsize = 8192 # This sets the read chunk size in bytes, both for Spark and for our bridge. Tweaking this parameter is important.
-        self.spark_application_type = 'java'
+        self.spark_application_type = 'java' # Type of executable we deploy to Spark. Either 'java' or 'python'.
         self.spark_deploymode = 'client' # 'cluster' for cluster deployment mode, 'client' for client mode.
         self.spark_java_options = []
         self.spark_conf_options = lambda conf: ExperimentConfiguration.base_spark_conf_options(conf)

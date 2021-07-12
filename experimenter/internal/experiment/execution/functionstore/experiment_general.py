@@ -95,6 +95,28 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
 
 
 def experiment_deploy_default(interface, idx, num_experiments, connectionwrappers=None):
+    '''Deploys an experiment.
+    Args:
+        interface (ExecutionInterface): Interface this function is registered for. Used to get the config.
+        idx (int): Experiment index.
+        num_experiments (int): Amount of experiments.
+        nodes (list(metareserve.Nodes)): Nodes to deploy data for.
+        connectionwrappers (optional dict(metareserve.Node, RemotoSSHWrapper)): If set, uses given open connections to connect to Spark nodes.
+
+    Required config args:
+        spark_application_type (str): Type of application to deploy to Spark. 'java' for Java, 'python' for Python.
+        spark_deploymode (str): Denotes the Spark deploy mode. 'client' means client mode, 'server' means server mode.
+        spark_driver_memory (int): Spark driver memory limit, passed as standard JVM size modifier, i.e. '12M', '1000kb', '64G'.
+        spark_executor_memory (int): Spark executor memory limit, passed as standard JVM size modifier, i.e. '12M', '1000kb', '64G'.
+        spark_java_options (list(str)): JVM options for Spark.
+        spark_conf_options (list(str)): Configuration options for Spark.
+        spark_application_path (str): Path to deployed application.
+        spark_application_args (list(str)): Application arguments for deployed application.
+        spark_application_mainclass (str): Only required when `spark_application_type=='java'`. Must give FQDN Java class path to class containing main function of executable.
+        spark_extra_jars (str): Only required when `spark_application_type=='java'`. Extra jars to add with the application.
+
+    Returns:
+        `True` on success, `False` on failure.'''
     config = interface.config
     spark_master_id = interface.spark_master_id
     spark_master_url = interface.spark_master_url
@@ -140,6 +162,12 @@ def experiment_fetch_results_default(interface, idx, num_experiments, driver_nod
         num_experiments (int): Amount of experiments we will run.
         driver_node_id (optional int): If set, skips searching for the driver node. Assumes node with given id is the driver instead.
         connectionwrapper (optional RemotoSSHWrapper): If set, uses given connection, instead of building a new one.
+
+    Required config args:
+        remote_result_file (str): Remote result location for experiment files.
+        result_dir (str): Result dir on the local machine.
+        result_file (str): Result file on the local machine.
+        spark_deploymode (str): Denotes the Spark deployment mode to use.
 
     Returns:
         `True` on success, `False` on failure.'''

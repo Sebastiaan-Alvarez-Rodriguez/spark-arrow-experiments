@@ -1,7 +1,15 @@
 from utils.printer import *
 
 def distribute_default(interface):
-    '''Most simple node distributor possible: First x nodes are for Ceph, next y nodes are for Spark. No overlap.'''
+    '''Most simple node distributor possible: First x nodes are for Ceph, next y nodes are for Spark. No overlap.
+    Args:
+        interface (ExecutionInterface): Interface this function is registered for. Used to get the config.
+
+    Required config args:
+        node config (NodeConfiguration): Node configuration to distribute nodes for.
+
+    Returns:
+        `True`, `dict(name, list(metareserve.Node))` on success, `False`, `None` on failure.'''
     reservation_nodes = list(interface.reservation.nodes)
     config = interface.config
     node_config = config.node_config

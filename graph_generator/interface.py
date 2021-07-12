@@ -12,7 +12,6 @@ class GeneratorInterface(metaclass=abc.ABCMeta):
 
     def filter(self, path):
         '''Determine if given path should be accepted or filtered out.
-        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
         Args:
             path (str): Full path to file to decide for.
 
@@ -23,7 +22,6 @@ class GeneratorInterface(metaclass=abc.ABCMeta):
 
     def to_identifiers(self, path):
         '''Transform given path to a number of identifiers.
-        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
         Args:
             path (str): Full path to file to build identifiers for.
 
@@ -34,7 +32,6 @@ class GeneratorInterface(metaclass=abc.ABCMeta):
 
     def sorting(self, frame):
         '''Sort result groups for grouped display.
-        Note: If the result path contain a `.py` file, uses equivalent-named function from that file instead.
         Args:
             frame (Frame): Frame to sort.
 

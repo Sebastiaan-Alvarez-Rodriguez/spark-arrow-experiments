@@ -55,7 +55,7 @@ class StackedBarPlot(GeneratorInterface):
             plot_i_arr.append(frame.i_avgtime)
             plot_c_arr.append(frame.c_avgtime)
             label_arr.append(str(frame))
-            ticks_arr.append(frame.identifiers['group'])
+            ticks_arr.append(f'{frame.identifiers["group"]}%')
             # Code below for error whiskers (take note of percentile function to filter out outliers)
             normal_frame = (np.add(frame.c_arr,frame.i_arr))/1000000000
             percentile1 = np.percentile(normal_frame, 1)
@@ -84,7 +84,7 @@ class StackedBarPlot(GeneratorInterface):
         found_curve = func(ind, *popt)
         plt.plot(ind, found_curve, linestyle='--', marker='o', label='trend ($r^2$ = {:.3f})'.format(r2_score(np.add(plot_i_arr,plot_c_arr), found_curve)))
 
-        ax.set(xlabel='Objectsize (MB)', ylabel='Time (s)', title='Influence of objectsize on performance')
+        ax.set(xlabel='Row Selectivity', ylabel='Time (s)', title='Influence of selectivity on performance')
         plt.xticks(ind, ticks_arr)
         ax.set_ylim(ymin=0)
 
