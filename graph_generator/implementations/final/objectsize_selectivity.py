@@ -1,3 +1,4 @@
+import itertools
 import re
 
 import matplotlib.pyplot as plt
@@ -17,7 +18,7 @@ def get_generator(*args, **kwargs):
 
 
 class StackedBarPlot(GeneratorInterface):
-    '''Simple class to make lineplots.
+    '''Simple class to make barplots.
     Expects that frames contain a `group` identifier. Each group category is plotted as a separate bar.'''
     def __init__(self, *args, **kwargs):
         pass
@@ -79,23 +80,10 @@ class StackedBarPlot(GeneratorInterface):
         # width = 0.40
         width = 0.8 / len(plot_i_arr)
 
-
-        # bar_ind = np.array([])
-        # ticks_ind = []
-        # for idx, x in enumerate(plot_i_arr):
-        #     tmp = np.arange(len(x)) if idx == 0 else np.arange(start=bar_ind[-1]+group_width, stop=bar_ind[-1]+group_width+len(x))
-        #     bar_ind = np.concatenate((bar_ind, tmp), axis=None)
-        #     ticks_ind.append(tmp[(len(tmp)-1)//2])
-        # bar_ind = bar_ind[:total_bars]
-        # # print(f'Bar indices: {bar_ind} (total:{len(bar_ind)}/{total_bars})')
-        # assert len(bar_ind) == total_bars
-        # print(f'Ticks locations: {ticks_ind}')
-
         bar_ind = np.array(range(len(plot_i_arr)))
         ticks_ind = [x + (width * (len(bar_ind)-1) * 0.5) for x in bar_ind]
 
 
-        import itertools
 
         colormap = cm.get_cmap('winter')
         # colormap = cm.get_cmap('twilight_shifted')
@@ -112,8 +100,6 @@ class StackedBarPlot(GeneratorInterface):
         colors = [colormap(i) for i in np.linspace(0.0, 0.75, num=len(plot_i_arr[0]))]
         print(colors)
         # colors = ['red', 'green', 'blue', 'purple', 'orange', 'violet']
-        enumerated = [i for i in range(len(plot_i_arr))]
-
 
         total_i_arr = list(itertools.chain(*plot_i_arr))
         print(plot_i_arr)
@@ -123,8 +109,8 @@ class StackedBarPlot(GeneratorInterface):
         legend_row1 = [['Init.'], ['Comp.']]
         label_empty = ['']
         extra = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
-        legend_handle = [extra for x in enumerated]
-        for i, c in zip(enumerated, colors):
+        legend_handle = [extra for x in range(len(plot_i_arr))]
+        for i, c in enumerate(colors):
             for j in range(len(bar_ind)):
                 bar1 = ax.bar(bar_ind[j] + i * width, plot_i_arr[j][i], width, color=c)
                 bar2 = ax.bar(bar_ind[j] + i * width, plot_c_arr[j][i], width, yerr=errors_arr[j][i], bottom=plot_i_arr[j][i], align='center', alpha=0.6, ecolor='black', capsize=width*50, color=c)
@@ -144,7 +130,7 @@ class StackedBarPlot(GeneratorInterface):
         # y_hat = np.poly1d(z)(bar_ind)
         # ax.plot(bar_ind, y_hat, '--', label='trend ($r^2$ = {:.3f})'.format(r2_score(np.add(plot_i_arr,plot_c_arr), y_hat)))
 
-        empty_len = len(enumerated)-1
+        empty_len = len(plot_i_arr)-1
 
         # inspiration: https://stackoverflow.com/questions/25830780/tabular-legend-layout-for-matplotlib
         legend_labels = np.concatenate([legend_row, legend_row1[0], label_empty*empty_len, legend_row1[1], label_empty*empty_len])

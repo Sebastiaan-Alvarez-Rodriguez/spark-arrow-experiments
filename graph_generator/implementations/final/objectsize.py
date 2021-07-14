@@ -16,7 +16,7 @@ def get_generator(*args, **kwargs):
 
 
 class StackedBarPlot(GeneratorInterface):
-    '''Simple class to make lineplots.
+    '''Simple class to make barplots.
     Expects that frames contain a `group` identifier. Each group category is plotted as a separate bar.'''
     def __init__(self, *args, **kwargs):
         pass

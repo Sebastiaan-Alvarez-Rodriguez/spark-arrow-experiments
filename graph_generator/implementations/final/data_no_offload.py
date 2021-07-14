@@ -19,7 +19,7 @@ def _get_numbers(string):
     return int(m.group(1)), int(m.group(2))
 
 class StackedBarPlot(GeneratorInterface):
-    '''Simple class to make lineplots.
+    '''Simple class to make barplots.
     Expects that frames contain a `group` identifier. Each group category is plotted as a separate bar.'''
     def __init__(self, *args, **kwargs):
         pass

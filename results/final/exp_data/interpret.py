@@ -6,6 +6,7 @@ def _get_numbers(string):
     m = re.match(r'cp([0-9]+)_ln([0-9]+)', string)
     return int(m.group(1)), int(m.group(2))
 
+
 def to_identifiers(path):
     '''Transform given path to a number of identifiers.
     Args:
@@ -20,10 +21,10 @@ def to_identifiers(path):
     elif path.endswith('.res_s'):
         identifiers['producer'] = 'spark'
 
-    cp, ln = _get_numbers(os.path.basename(os.path.dirname(os.path.dirname(path))))
+    cp, ln = _get_numbers(os.path.basename(os.path.dirname(path)))
     identifiers['size'] = cp * ln
     identifiers['group'] = str(identifiers['size'])
-    identifiers['group1'] = 'offload'
+    identifiers['group1'] = str(identifiers['producer'])
     return identifiers
 
 
@@ -34,4 +35,4 @@ def sorting(frame):
 
     Returns:
         `callable` sorting function to use when displaying results in a grouped manner.'''
-    return frame.identifiers['size']
+    return (frame.identifiers['size'], frame.identifiers['producer'])
