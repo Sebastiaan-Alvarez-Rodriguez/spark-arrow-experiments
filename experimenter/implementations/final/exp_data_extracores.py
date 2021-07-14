@@ -73,6 +73,7 @@ class CephExperiment(ExperimentInterface):
                     "'spark.arrowspark.pushdown.filters=True'",
                     "'spark.arrowspark.ceph.userados=True'",
                     "'spark.executor.cores=8'",
+                    "'spark.executor.instances=16'",
                 ])
                 config = configbuilder.build()
                 configs.append(config)
