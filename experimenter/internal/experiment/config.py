@@ -42,7 +42,7 @@ class ExperimentConfiguration(object):
         self.spark_submit_with_sudo = False # use 'sudo spark-submit ...' instead of 'spark-submit ...'.
         self.spark_workdir = '~/spark_workdir'
         self.spark_force_reinstall = False
-        self.spark_download_url = 'https://archive.apache.org/dist/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz'
+        self.spark_download_url = 'https://archive.apache.org/dist/spark/spark-3.1.2/spark-3.1.2-bin-hadoop2.7.tgz'
         self.spark_driver_memory = '16G'
         self.spark_executor_memory = '16G'
 
@@ -56,7 +56,7 @@ class ExperimentConfiguration(object):
         self.ceph_placement_groups = None # Set to an integer for placement groups. If `None`, rados-deploy will use recommended default computation.
         self.ceph_store_type = StorageType.BLUESTORE # Storage type to use.
         self.ceph_use_client_cache = False # If set, uses client I/O cache. Otherwise, disables caching capabilities of CephFS on all client nodes.
-        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/rados_connection_cache_dev.zip'
+        self.ceph_arrow_url = 'https://github.com/Sebastiaan-Alvarez-Rodriguez/arrow/archive/refs/heads/master.zip'
         self.ceph_force_reinstall = False
         self.ceph_debug = False
         self.rados_used = True # If set to False, we deploy data to a non-cephFS directory and we tell Arrow-Spark to not use RADOS-based reads, but regular reads instead.
@@ -121,6 +121,8 @@ class ExperimentConfiguration(object):
             "'spark.driver.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
+            "'spark.sql.extensions=org.arrowspark.spark.sql.write.ArrowWriteExtension,io.delta.sql.DeltaSparkSessionExtension'",
+            "'spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog'",
         ]
         if not conf.rados_used:
             base.append("'spark.arrowspark.ceph.userados=false'") # This rule ensures the connector reads using a regular filesystem reader.

@@ -118,7 +118,7 @@ class ExecutionInterface(object):
             return False
 
 
-    def execute(self, skip_elements):
+    def execute(self):
         '''Executes experiment setup, calling registered methods as needed.
         Returns:
             `True` on successful execution, `False` otherwise.'''
@@ -149,44 +149,39 @@ class ExecutionInterface(object):
             printw('Found {} unused nodes:\n{}'.format(len(unused_nodes), ''.join('\t{}\n'.format(x) for x in unused_nodes)))
 
 
-        if not skip_elements['spark']:
-            print('Installing Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-            if not self.install_spark_func(self):
-                printe('Could not install Spark.')
+        print('Installing Spark ({} nodes)...'.format(len(self.distribution['spark'])))
+        if not self.install_spark_func(self):
+            printe('Could not install Spark.')
+            return False
+        if any(self.install_others_funcs):
+            print('Installing {} other components...'.format(len(self.install_others_funcs)))
+        for idx, x in enumerate(self.install_others_funcs):
+            if not x(self):
+                printe('Could not execute installation function {}/{}: {}'.format(idx+1, len(self.install_others_funcs), x.__name__))
                 return False
-        if not skip_elements['ceph']:
-            if any(self.install_others_funcs):
-                print('Installing {} other components...'.format(len(self.install_others_funcs)))
-            for idx, x in enumerate(self.install_others_funcs):
-                if not x(self):
-                    printe('Could not execute installation function {}/{}: {}'.format(idx+1, len(self.install_others_funcs), x.__name__))
-                    return False
 
-        if not skip_elements['spark']:
-            print('Starting Spark ({} nodes)...'.format(len(self.distribution['spark'])))
-            if not self.start_spark_func(self):
-                printe('Could not start Spark.')
+        print('Starting Spark ({} nodes)...'.format(len(self.distribution['spark'])))
+        if not self.start_spark_func(self):
+            printe('Could not start Spark.')
+            return False
+        if any(self.start_others_funcs):
+            print('Starting {} other components...'.format(len(self.start_others_funcs)))
+        for idx, x in enumerate(self.start_others_funcs):
+            if not x(self):
+                printe('Could not execute start function {}/{}: {}'.format(idx+1, len(self.start_others_funcs), x.__name__))
                 return False
-        if not skip_elements['ceph']:
-            if any(self.start_others_funcs):
-                print('Starting {} other components...'.format(len(self.start_others_funcs)))
-            for idx, x in enumerate(self.start_others_funcs):
-                if not x(self):
-                    printe('Could not execute start function {}/{}: {}'.format(idx+1, len(self.start_others_funcs), x.__name__))
-                    return False
 
-        if not skip_elements['data']:
-            if any(self.generate_data_funcs):
-                print('Generating data ({} functions)...'.format(len(self.generate_data_funcs)))
-            for idx, x in enumerate(self.generate_data_funcs):
-                if not x(self):
-                    printe('Could not execute data generation function {}/{}: {}'.format(idx+1, len(self.generate_data_funcs), x.__name__))
-                    return False
-
-            print('Deploying data...')
-            if callable(self.deploy_data_func) and not self.deploy_data_func(self):
-                printe('Could not deploy data.')
+        if any(self.generate_data_funcs):
+            print('Generating data ({} functions)...'.format(len(self.generate_data_funcs)))
+        for idx, x in enumerate(self.generate_data_funcs):
+            if not x(self):
+                printe('Could not execute data generation function {}/{}: {}'.format(idx+1, len(self.generate_data_funcs), x.__name__))
                 return False
+
+        print('Deploying data...')
+        if callable(self.deploy_data_func) and not self.deploy_data_func(self):
+            printe('Could not deploy data.')
+            return False
 
         print('Executing {} experiment function(s)...'.format(len(self.experiment_funcs)))
         for idx, x in enumerate(self.experiment_funcs):
