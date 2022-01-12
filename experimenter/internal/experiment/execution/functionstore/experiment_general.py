@@ -56,7 +56,7 @@ def _submit_blocking(config, command, spark_nodes, spark_master_id, connectionwr
         for path in config.local_application_paths:
             if not (fs.exists(path) or fs.issymlink(path)):
                 print('    {}'.format(path))
-        printe('Mofidy config variable "local_application_paths" to change/remove these paths, or make sure files exist in the correct location.')
+        printe('Modify config variable "local_application_paths" to change/remove these paths, or make sure files exist in the correct location.')
         return False
 
     for _try in range(config.tries):
