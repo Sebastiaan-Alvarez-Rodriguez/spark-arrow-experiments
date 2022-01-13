@@ -121,9 +121,6 @@ class ExperimentConfiguration(object):
             "'spark.driver.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
-            # TODO: either make it work, or remove completely
-            # "'spark.sql.extensions=org.arrowspark.spark.sql.write.ArrowWriteExtension,io.delta.sql.DeltaSparkSessionExtension'",
-            # "'spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog'",
         ]
         if not conf.rados_used:
             base.append("'spark.arrowspark.ceph.userados=false'") # This rule ensures the connector reads using a regular filesystem reader.
