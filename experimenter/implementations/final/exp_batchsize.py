@@ -44,7 +44,7 @@ def get_node_configuration():
         [Designation.OSD, Designation.MGR],
         [Designation.OSD, Designation.MDS],
         [Designation.OSD, Designation.MDS],
-        [Designation.OSD, Designation.MDS]]), separated=True)
+        [Designation.OSD, Designation.MDS]]))
 
 
 # Performs experiment definition 1: We read using Arrow, using RADOS, without pushing filters.
@@ -60,9 +60,8 @@ class CephExperiment(ExperimentInterface):
         ''''Get experiment ExecutionInterfaces.
         Returns:
             `iterable(internal.experiment.ExecutionInterfaces)`, containing all different setups we want to experiment with.'''
-        data_query = 'SELECT * FROM table WHERE val0 > 27' #10% row selectivity, 100% column selectivity
-        # batchsizes = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
-        batchsizes = [4096]
+        data_query = 'SELECT * FROM table WHERE total_amount > 27' #10% row selectivity, 100% column selectivity
+        batchsizes = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
 
         stripe = 16 # One file should have stripe size of this many MB
         copy_multiplier, link_multiplier = (64, 512) #Total data size: 512GB
@@ -73,7 +72,7 @@ class CephExperiment(ExperimentInterface):
             result_dirname = '{}'.format(batchsize)
             configbuilder = ExperimentConfigurationBuilder()
             configbuilder.set('mode', '--arrow-only')
-            configbuilder.set('runs', 1)
+            configbuilder.set('runs', 21)
             configbuilder.set('batchsize', batchsize)
             configbuilder.set('spark_driver_memory', '60G')
             configbuilder.set('spark_executor_memory', '60G')
@@ -83,7 +82,7 @@ class CephExperiment(ExperimentInterface):
             configbuilder.set('link_multiplier', link_multiplier)
             configbuilder.set('remote_result_dir', fs.join('~', 'results', 'exp_batchsize', str(timestamp), result_dirname))
             configbuilder.set('result_dir', fs.join(loc.result_dir(), 'exp_batchsize', str(timestamp), result_dirname))
-            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'mariska_16mb.pq'))
+            configbuilder.set('data_path', fs.join(loc.data_generation_dir(), 'jayjeet_16mb.pq'))
             configbuilder.set('data_query', '"{}"'.format(data_query))
             config = configbuilder.build()
             configs.append(config)

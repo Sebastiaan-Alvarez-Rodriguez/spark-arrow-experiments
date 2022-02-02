@@ -74,7 +74,7 @@ def distribute_automatic(interface):
 
 def distribute_default(interface):
     '''Most simple node distributor possible: 
-            - if separted: First x nodes are for Ceph, next y nodes are for Spark. No overlap.
+            - if separated: First x nodes are for Ceph, next y nodes are for Spark. No overlap.
             - else: First x nodes are for Ceph, first y nodes are for Spark. No overlap
         Overwrites manual designation
     Args:
