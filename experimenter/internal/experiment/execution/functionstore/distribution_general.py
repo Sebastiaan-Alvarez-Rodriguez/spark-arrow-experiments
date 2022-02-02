@@ -1,13 +1,14 @@
 from rados_deploy import Designation
 from utils.printer import *
 
-
 def distribute_automatic(interface):
     '''Distribution happens as follows: 
      - All nodes with a designation become ceph-nodes
         * If the manual designation is invalid, then this designation is removed 
         * Then, the node may not be a ceph-node
-     - For the rest: the first x nodes become spark-nodes, the other y nodes become ceph-nodes
+     - For the rest: 
+        * If separated: the first x nodes become spark-nodes, the other y nodes become ceph-nodes
+        * Else: the first x nodes become spark-nodes, the first y nodes become ceph-nodes
      - The configured designations are distributed over the un-designated ceph-nodes
     Args:
         interface (ExecutionInterface): Interface this function is registered for. Used to get the config.
@@ -24,8 +25,13 @@ def distribute_automatic(interface):
     ceph_config = node_config.ceph_config
     num_spark_nodes = node_config.num_spark_nodes
     num_ceph_nodes = node_config.num_ceph_nodes
+    separated = node_config.separated
 
-    if len(reservation_nodes) < num_spark_nodes+num_ceph_nodes:
+    if not separated and len(reservation_nodes) < max(num_ceph_nodes, num_spark_nodes):
+        printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes, {} Ceph nodes)'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
+        return False, None
+
+    if separated and len(reservation_nodes) < num_spark_nodes+num_ceph_nodes:
         printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes + {} Ceph nodes)'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
         return False, None
 
@@ -45,22 +51,31 @@ def distribute_automatic(interface):
                 num_ceph_nodes -= 1
 
     # Remove the ceph-nodes from the reservation
-    reservation_nodes = [node for node in reservation_nodes if node not in rados_ceph_nodes]
+    if separated:
+        reservation_nodes = [node for node in reservation_nodes if node not in rados_ceph_nodes]
 
     # Distribute Spark-nodes
     spark_nodes = reservation_nodes[:num_spark_nodes]
 
     # Distribute Ceph-nodes and provide designation 
-    for node, designation in zip(reservation_nodes[num_spark_nodes:num_ceph_nodes+num_spark_nodes], designations):
-        node.extra_info['designations'] = ','.join(x.name.lower() for x in designation)
-        rados_ceph_nodes.append(node)
+    if separated:
+        for node, designation in zip(reservation_nodes[num_spark_nodes:num_ceph_nodes+num_spark_nodes], designations):
+            node.extra_info['designations'] = ','.join(x.name.lower() for x in designation)
+            rados_ceph_nodes.append(node)
+    else:
+        reservation_nodes = [node for node in reservation_nodes if node not in rados_ceph_nodes]
+        for node, designation in zip(reservation_nodes[:num_ceph_nodes], designations):
+            node.extra_info['designations'] = ','.join(x.name.lower() for x in designation)
+            rados_ceph_nodes.append(node)
 
     return True, {'spark': spark_nodes, 'rados_ceph': rados_ceph_nodes}
 
 
 
 def distribute_default(interface):
-    '''Most simple node distributor possible: First x nodes are for Ceph, next y nodes are for Spark. No overlap.
+    '''Most simple node distributor possible: 
+            - if separted: First x nodes are for Ceph, next y nodes are for Spark. No overlap.
+            - else: First x nodes are for Ceph, first y nodes are for Spark. No overlap
         Overwrites manual designation
     Args:
         interface (ExecutionInterface): Interface this function is registered for. Used to get the config.
@@ -75,12 +90,18 @@ def distribute_default(interface):
     node_config = config.node_config
     num_spark_nodes = node_config.num_spark_nodes
     num_ceph_nodes = node_config.num_ceph_nodes
+    separated = node_config.separated
 
-    if len(reservation_nodes) < num_spark_nodes+num_ceph_nodes:
+    if not separated and len(reservation_nodes) < max(num_ceph_nodes, num_spark_nodes):
+        printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes, {} Ceph nodes)'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
+        return False, None
+
+    if separated and len(reservation_nodes) < num_spark_nodes+num_ceph_nodes:
         printe('Not enough nodes reserved to satisfy largest experiment configuration. Have {} nodes, need {} ({} Spark nodes + {} Ceph nodes)'.format(reserved_nodes_len, len(max_node_conf), max_node_conf.num_spark_nodes, max_node_conf.num_ceph_nodes))
         return False, None
+
     rados_ceph_nodes = reservation_nodes[:num_ceph_nodes]
-    spark_nodes = reservation_nodes[num_ceph_nodes:num_ceph_nodes+num_spark_nodes]
+    spark_nodes = reservation_nodes[:num_spark_nodes]
 
     # overwrite manual designation
     for node, designation in zip(rados_ceph_nodes, node_config.ceph_config.designations):
