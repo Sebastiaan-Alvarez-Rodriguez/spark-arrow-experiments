@@ -89,7 +89,7 @@ class CephExperiment(ExperimentInterface):
 
         for idx, config in enumerate(configs):
             executionInterface = ExecutionInterface(config)
-            executionInterface.register('distribute_func', distribution_general.distribute_default)
+            executionInterface.register('distribute_func', distribution_general.distribute_automatic)
             experiment_general.register_default_experiment_function(executionInterface, idx, len(configs))
             experiment_general.register_default_result_fetch_function(executionInterface, idx, len(configs))
             rados_ceph.register_rados_ceph_deploy_data(executionInterface, idx, len(configs))

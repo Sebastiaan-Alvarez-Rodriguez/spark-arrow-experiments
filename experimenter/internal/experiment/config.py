@@ -121,8 +121,6 @@ class ExperimentConfiguration(object):
             "'spark.driver.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.executor.extraClassPath={}'".format(fs.join(_to_val(conf.remote_application_dir, conf), _to_val(conf.spark_application_path, conf))),
             "'spark.sql.parquet.columnarReaderBatchSize={}'".format(_to_val(conf.batchsize, conf)),
-            "'spark.sql.extensions=org.arrowspark.spark.sql.write.ArrowWriteExtension,io.delta.sql.DeltaSparkSessionExtension'",
-            "'spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog'",
         ]
         if not conf.rados_used:
             base.append("'spark.arrowspark.ceph.userados=false'") # This rule ensures the connector reads using a regular filesystem reader.
@@ -160,9 +158,11 @@ class ExperimentConfigurationBuilder(object):
 
 class NodeConfiguration(object):
     '''Trivial class to describe how many nodes we want for Spark, how many for RADOS-Ceph, and what nodes will serve what purpose in the Ceph cluster.'''
-    def __init__(self, num_spark_nodes, ceph_config):
+    # separated: If False Ceph and Spark will be placed on the same nodes
+    def __init__(self, num_spark_nodes, ceph_config, separated=False):
         self._spark_nodes = num_spark_nodes
         self._ceph_config = ceph_config
+        self._separated = separated
 
     @property
     def num_spark_nodes(self):
@@ -173,11 +173,17 @@ class NodeConfiguration(object):
         return len(self._ceph_config)
 
     @property
+    def separated(self):
+        return self._separated
+
+    @property
     def ceph_config(self):
         return self._ceph_config
 
     def __len__(self):
-        return self.num_spark_nodes+self.num_ceph_nodes
+        if separated:
+            return self.num_spark_nodes+self.num_ceph_nodes
+        return max(self.num_spark_nodes, self.num_ceph_nodes)
 
 
 class CephConfiguration(object):
